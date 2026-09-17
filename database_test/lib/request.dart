@@ -21,40 +21,58 @@ String normalizePath(String path) {
 Uri buildUri(String scheme, String host, String path) =>
     Uri.parse('$scheme://${host.trim()}${normalizePath(path)}');
 
-// Sends the device's request and returns the response as displayable text
-Future<String> sendRequest(Device device) async {
+bool _usesHttp(Device device) => device.scheme == 'http' || device.scheme == 'https';
+
+// Sends the device's request and returns the status code and the raw body,
+// throws if the request fails. Sensors read their values from the body.
+// Without [timeout] a CoAP request to an unreachable device only fails after
+// all retransmissions from coap_config_all.yaml, which takes over 25 minutes
+Future<({String code, String body})> fetchResponse(
+  Device device, {
+  Duration? timeout,
+}) async {
   var uri = buildUri(device.scheme, device.host, device.path);
 
-  try {
-    if (uri.scheme == 'http' || uri.scheme == 'https') {
-      final response = await switch (device.method) {
-        'POST' => http.post(uri, body: device.payload),
-        'PUT' => http.put(uri, body: device.payload),
-        'DELETE' => http.delete(uri, body: device.payload),
-        _ => http.get(uri),
-      };
-      return 'Status: ${response.statusCode}\n${response.body}';
-    }
+  if (_usesHttp(device)) {
+    final request = switch (device.method) {
+      'POST' => http.post(uri, body: device.payload),
+      'PUT' => http.put(uri, body: device.payload),
+      'DELETE' => http.delete(uri, body: device.payload),
+      _ => http.get(uri),
+    };
+    final response = await (timeout == null ? request : request.timeout(timeout));
+    return (code: '${response.statusCode}', body: response.body);
+  }
 
-    // CoAP: fall back to the default port 5683 if the host has none.
-    if (!uri.hasPort) uri = uri.replace(port: 5683);
-    final client = CoapClient(uri, config: CoapConfigAll());
-    try {
-      final response = await switch (device.method) {
-        'POST' => client.post(uri, payload: device.payload),
-        'PUT' => client.put(uri, payload: device.payload),
-        // Only the raw request carries a body on DELETE.
-        'DELETE' => client.send(
-            CoapRequest.delete(uri, payload: utf8.encode(device.payload)),
-          ),
-        _ => client.get(uri),
-      };
-      return response.payloadString.isNotEmpty
-          ? response.payloadString
-          : 'Empty response (Code: ${response.code})';
-    } finally {
-      client.close();
-    }
+  // CoAP: fall back to the default port 5683 if the host has none.
+  if (!uri.hasPort) uri = uri.replace(port: 5683);
+  final client = CoapClient(uri, config: CoapConfigAll());
+  try {
+    final request = switch (device.method) {
+      'POST' => client.post(uri, payload: device.payload),
+      'PUT' => client.put(uri, payload: device.payload),
+      // Only the raw request carries a body on DELETE.
+      'DELETE' => client.send(
+          CoapRequest.delete(uri, payload: utf8.encode(device.payload)),
+        ),
+      _ => client.get(uri),
+    };
+    final response = await (timeout == null ? request : request.timeout(timeout));
+    return (code: '${response.code}', body: response.payloadString);
+  } finally {
+    // Also stops the retransmissions of a request that ran into the timeout
+    client.close();
+  }
+}
+
+// Sends the device's request and returns the response as displayable text
+Future<String> sendRequest(Device device) async {
+  try {
+    final response = await fetchResponse(device);
+    if (_usesHttp(device)) return 'Status: ${response.code}\n${response.body}';
+    return response.body.isNotEmpty
+        ? response.body
+        : 'Empty response (Code: ${response.code})';
   } catch (e) {
     return 'Error: $e';
   }

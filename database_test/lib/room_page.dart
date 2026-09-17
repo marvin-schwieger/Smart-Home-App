@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import 'database.dart';
+import 'device_presets.dart';
 import 'request.dart';
 import 'room_icons.dart';
 import 'sheets.dart';
 
-// Devices of one room: tap sends the request, long press edits the device,
-// the bin icon deletes it
+// Devices of one room: tap sends the request (or opens the controls of a
+// preset like the lamp), long press edits the device, the bin icon deletes it
 class RoomPage extends StatefulWidget {
   final Room room;
 
@@ -36,7 +37,14 @@ class _RoomPageState extends State<RoomPage> {
   }
 
   Future<void> _addDevice() async {
-    await showDeviceSheet(context, widget.room);
+    await showAddDeviceSheet(context, widget.room);
+    if (mounted) await _load();
+  }
+
+  // Page of a preset device, the device is reloaded afterwards because the
+  // page may have changed it (lamp state, polling interval)
+  Future<void> _openPage(Widget page) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
     if (mounted) await _load();
   }
 
@@ -54,6 +62,7 @@ class _RoomPageState extends State<RoomPage> {
   Future<void> _deleteDevice(Device device) async {
     await (database.delete(database.devices)..where((t) => t.id.equals(device.id))).go();
     _responses.remove(device.id);
+    stopTemperatureFeed(device.id);
     await _load();
   }
 
@@ -77,6 +86,9 @@ class _RoomPageState extends State<RoomPage> {
     );
     if (confirmed != true) return;
 
+    for (final device in _devices) {
+      stopTemperatureFeed(device.id);
+    }
     await (database.delete(database.devices)
           ..where((t) => t.roomId.equals(widget.room.id)))
         .go();
@@ -119,13 +131,36 @@ class _RoomPageState extends State<RoomPage> {
               itemCount: _devices.length,
               itemBuilder: (context, i) {
                 final device = _devices[i];
-                return _DeviceCard(
-                  device: device,
-                  response: _responses[device.id],
-                  onSend: () => _send(device),
-                  onEdit: () => _editDevice(device),
-                  onDelete: () => _deleteDevice(device),
-                );
+                return switch (device.kind) {
+                  DeviceKind.lamp => _DeviceCard(
+                      device: device,
+                      leading: LampIcon(
+                        state: LampState.fromPayload(device.payload),
+                        size: 20,
+                      ),
+                      onTap: () => _openPage(LampPage(device: device, room: widget.room)),
+                      onEdit: () => _editDevice(device),
+                      onDelete: () => _deleteDevice(device),
+                    ),
+                  // Getting the feed starts polling, which then keeps running
+                  // for the whole app session
+                  DeviceKind.temperature => _DeviceCard(
+                      device: device,
+                      leading: const Icon(Icons.thermostat, color: Color(0xFFD9722B)),
+                      badge: TemperatureBadge(feed: temperatureFeed(device)),
+                      onTap: () =>
+                          _openPage(TemperatureSensorPage(device: device, room: widget.room)),
+                      onEdit: () => _editDevice(device),
+                      onDelete: () => _deleteDevice(device),
+                    ),
+                  DeviceKind.custom => _DeviceCard(
+                      device: device,
+                      response: _responses[device.id],
+                      onTap: () => _send(device),
+                      onEdit: () => _editDevice(device),
+                      onDelete: () => _deleteDevice(device),
+                    ),
+                };
               },
             ),
       floatingActionButton: FloatingActionButton(
@@ -138,15 +173,21 @@ class _RoomPageState extends State<RoomPage> {
 
 class _DeviceCard extends StatelessWidget {
   final Device device;
+  final Widget leading;
+
+  // Shown before the delete button, the request method if not given
+  final Widget? badge;
   final String? response;
-  final VoidCallback onSend;
+  final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _DeviceCard({
     required this.device,
-    required this.response,
-    required this.onSend,
+    this.leading = const Icon(Icons.sensors),
+    this.badge,
+    this.response,
+    required this.onTap,
     required this.onEdit,
     required this.onDelete,
   });
@@ -162,7 +203,7 @@ class _DeviceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
-            leading: const Icon(Icons.sensors),
+            leading: leading,
             title: Text(
               device.name,
               style: const TextStyle(fontWeight: FontWeight.bold),
@@ -174,17 +215,18 @@ class _DeviceCard extends StatelessWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEDE9E3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    device.method,
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
-                ),
+                badge ??
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEDE9E3),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        device.method,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ),
                 // Deleting is only possible here, never by long pressing.
                 IconButton(
                   onPressed: onDelete,
@@ -193,7 +235,7 @@ class _DeviceCard extends StatelessWidget {
                 ),
               ],
             ),
-            onTap: onSend,
+            onTap: onTap,
             onLongPress: onEdit,
           ),
           // Response of the last request, shown under the device.

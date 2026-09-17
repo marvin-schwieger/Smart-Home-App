@@ -9,6 +9,8 @@ environment:
 dependencies:
   coap: ^9.2.1
   drift: ^2.34.4
+  fl_chart: ^1.2.0
+  flex_color_picker: ^3.8.0
   flutter:
     sdk: flutter
   http: ^1.6.0

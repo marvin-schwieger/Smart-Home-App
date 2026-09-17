@@ -318,6 +318,16 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  @override
+  late final GeneratedColumnWithTypeConverter<DeviceKind, String> kind =
+      GeneratedColumn<String>(
+        'kind',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('custom'),
+      ).withConverter<DeviceKind>($DevicesTable.$converterkind);
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
@@ -378,16 +388,29 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _pollSecondsMeta = const VerificationMeta(
+    'pollSeconds',
+  );
+  @override
+  late final GeneratedColumn<int> pollSeconds = GeneratedColumn<int>(
+    'poll_seconds',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     roomId,
+    kind,
     name,
     scheme,
     host,
     path,
     method,
     payload,
+    pollSeconds,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -452,6 +475,15 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
         payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
       );
     }
+    if (data.containsKey('poll_seconds')) {
+      context.handle(
+        _pollSecondsMeta,
+        pollSeconds.isAcceptableOrUnknown(
+          data['poll_seconds']!,
+          _pollSecondsMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -469,6 +501,12 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
         DriftSqlType.int,
         data['${effectivePrefix}room_id'],
       )!,
+      kind: $DevicesTable.$converterkind.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}kind'],
+        )!,
+      ),
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
@@ -493,6 +531,10 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
         DriftSqlType.string,
         data['${effectivePrefix}payload'],
       )!,
+      pollSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}poll_seconds'],
+      ),
     );
   }
 
@@ -500,38 +542,51 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
   $DevicesTable createAlias(String alias) {
     return $DevicesTable(attachedDatabase, alias);
   }
+
+  static JsonTypeConverter2<DeviceKind, String, String> $converterkind =
+      const EnumNameConverter<DeviceKind>(DeviceKind.values);
 }
 
 class Device extends DataClass implements Insertable<Device> {
   final int id;
   final int roomId;
+  final DeviceKind kind;
   final String name;
   final String scheme;
   final String host;
   final String path;
   final String method;
   final String payload;
+  final int? pollSeconds;
   const Device({
     required this.id,
     required this.roomId,
+    required this.kind,
     required this.name,
     required this.scheme,
     required this.host,
     required this.path,
     required this.method,
     required this.payload,
+    this.pollSeconds,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['room_id'] = Variable<int>(roomId);
+    {
+      map['kind'] = Variable<String>($DevicesTable.$converterkind.toSql(kind));
+    }
     map['name'] = Variable<String>(name);
     map['scheme'] = Variable<String>(scheme);
     map['host'] = Variable<String>(host);
     map['path'] = Variable<String>(path);
     map['method'] = Variable<String>(method);
     map['payload'] = Variable<String>(payload);
+    if (!nullToAbsent || pollSeconds != null) {
+      map['poll_seconds'] = Variable<int>(pollSeconds);
+    }
     return map;
   }
 
@@ -539,12 +594,16 @@ class Device extends DataClass implements Insertable<Device> {
     return DevicesCompanion(
       id: Value(id),
       roomId: Value(roomId),
+      kind: Value(kind),
       name: Value(name),
       scheme: Value(scheme),
       host: Value(host),
       path: Value(path),
       method: Value(method),
       payload: Value(payload),
+      pollSeconds: pollSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pollSeconds),
     );
   }
 
@@ -556,12 +615,16 @@ class Device extends DataClass implements Insertable<Device> {
     return Device(
       id: serializer.fromJson<int>(json['id']),
       roomId: serializer.fromJson<int>(json['roomId']),
+      kind: $DevicesTable.$converterkind.fromJson(
+        serializer.fromJson<String>(json['kind']),
+      ),
       name: serializer.fromJson<String>(json['name']),
       scheme: serializer.fromJson<String>(json['scheme']),
       host: serializer.fromJson<String>(json['host']),
       path: serializer.fromJson<String>(json['path']),
       method: serializer.fromJson<String>(json['method']),
       payload: serializer.fromJson<String>(json['payload']),
+      pollSeconds: serializer.fromJson<int?>(json['pollSeconds']),
     );
   }
   @override
@@ -570,44 +633,56 @@ class Device extends DataClass implements Insertable<Device> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'roomId': serializer.toJson<int>(roomId),
+      'kind': serializer.toJson<String>(
+        $DevicesTable.$converterkind.toJson(kind),
+      ),
       'name': serializer.toJson<String>(name),
       'scheme': serializer.toJson<String>(scheme),
       'host': serializer.toJson<String>(host),
       'path': serializer.toJson<String>(path),
       'method': serializer.toJson<String>(method),
       'payload': serializer.toJson<String>(payload),
+      'pollSeconds': serializer.toJson<int?>(pollSeconds),
     };
   }
 
   Device copyWith({
     int? id,
     int? roomId,
+    DeviceKind? kind,
     String? name,
     String? scheme,
     String? host,
     String? path,
     String? method,
     String? payload,
+    Value<int?> pollSeconds = const Value.absent(),
   }) => Device(
     id: id ?? this.id,
     roomId: roomId ?? this.roomId,
+    kind: kind ?? this.kind,
     name: name ?? this.name,
     scheme: scheme ?? this.scheme,
     host: host ?? this.host,
     path: path ?? this.path,
     method: method ?? this.method,
     payload: payload ?? this.payload,
+    pollSeconds: pollSeconds.present ? pollSeconds.value : this.pollSeconds,
   );
   Device copyWithCompanion(DevicesCompanion data) {
     return Device(
       id: data.id.present ? data.id.value : this.id,
       roomId: data.roomId.present ? data.roomId.value : this.roomId,
+      kind: data.kind.present ? data.kind.value : this.kind,
       name: data.name.present ? data.name.value : this.name,
       scheme: data.scheme.present ? data.scheme.value : this.scheme,
       host: data.host.present ? data.host.value : this.host,
       path: data.path.present ? data.path.value : this.path,
       method: data.method.present ? data.method.value : this.method,
       payload: data.payload.present ? data.payload.value : this.payload,
+      pollSeconds: data.pollSeconds.present
+          ? data.pollSeconds.value
+          : this.pollSeconds,
     );
   }
 
@@ -616,105 +691,133 @@ class Device extends DataClass implements Insertable<Device> {
     return (StringBuffer('Device(')
           ..write('id: $id, ')
           ..write('roomId: $roomId, ')
+          ..write('kind: $kind, ')
           ..write('name: $name, ')
           ..write('scheme: $scheme, ')
           ..write('host: $host, ')
           ..write('path: $path, ')
           ..write('method: $method, ')
-          ..write('payload: $payload')
+          ..write('payload: $payload, ')
+          ..write('pollSeconds: $pollSeconds')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, roomId, name, scheme, host, path, method, payload);
+  int get hashCode => Object.hash(
+    id,
+    roomId,
+    kind,
+    name,
+    scheme,
+    host,
+    path,
+    method,
+    payload,
+    pollSeconds,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Device &&
           other.id == this.id &&
           other.roomId == this.roomId &&
+          other.kind == this.kind &&
           other.name == this.name &&
           other.scheme == this.scheme &&
           other.host == this.host &&
           other.path == this.path &&
           other.method == this.method &&
-          other.payload == this.payload);
+          other.payload == this.payload &&
+          other.pollSeconds == this.pollSeconds);
 }
 
 class DevicesCompanion extends UpdateCompanion<Device> {
   final Value<int> id;
   final Value<int> roomId;
+  final Value<DeviceKind> kind;
   final Value<String> name;
   final Value<String> scheme;
   final Value<String> host;
   final Value<String> path;
   final Value<String> method;
   final Value<String> payload;
+  final Value<int?> pollSeconds;
   const DevicesCompanion({
     this.id = const Value.absent(),
     this.roomId = const Value.absent(),
+    this.kind = const Value.absent(),
     this.name = const Value.absent(),
     this.scheme = const Value.absent(),
     this.host = const Value.absent(),
     this.path = const Value.absent(),
     this.method = const Value.absent(),
     this.payload = const Value.absent(),
+    this.pollSeconds = const Value.absent(),
   });
   DevicesCompanion.insert({
     this.id = const Value.absent(),
     required int roomId,
+    this.kind = const Value.absent(),
     required String name,
     this.scheme = const Value.absent(),
     required String host,
     this.path = const Value.absent(),
     this.method = const Value.absent(),
     this.payload = const Value.absent(),
+    this.pollSeconds = const Value.absent(),
   }) : roomId = Value(roomId),
        name = Value(name),
        host = Value(host);
   static Insertable<Device> custom({
     Expression<int>? id,
     Expression<int>? roomId,
+    Expression<String>? kind,
     Expression<String>? name,
     Expression<String>? scheme,
     Expression<String>? host,
     Expression<String>? path,
     Expression<String>? method,
     Expression<String>? payload,
+    Expression<int>? pollSeconds,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (roomId != null) 'room_id': roomId,
+      if (kind != null) 'kind': kind,
       if (name != null) 'name': name,
       if (scheme != null) 'scheme': scheme,
       if (host != null) 'host': host,
       if (path != null) 'path': path,
       if (method != null) 'method': method,
       if (payload != null) 'payload': payload,
+      if (pollSeconds != null) 'poll_seconds': pollSeconds,
     });
   }
 
   DevicesCompanion copyWith({
     Value<int>? id,
     Value<int>? roomId,
+    Value<DeviceKind>? kind,
     Value<String>? name,
     Value<String>? scheme,
     Value<String>? host,
     Value<String>? path,
     Value<String>? method,
     Value<String>? payload,
+    Value<int?>? pollSeconds,
   }) {
     return DevicesCompanion(
       id: id ?? this.id,
       roomId: roomId ?? this.roomId,
+      kind: kind ?? this.kind,
       name: name ?? this.name,
       scheme: scheme ?? this.scheme,
       host: host ?? this.host,
       path: path ?? this.path,
       method: method ?? this.method,
       payload: payload ?? this.payload,
+      pollSeconds: pollSeconds ?? this.pollSeconds,
     );
   }
 
@@ -726,6 +829,11 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     }
     if (roomId.present) {
       map['room_id'] = Variable<int>(roomId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(
+        $DevicesTable.$converterkind.toSql(kind.value),
+      );
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -745,6 +853,9 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     if (payload.present) {
       map['payload'] = Variable<String>(payload.value);
     }
+    if (pollSeconds.present) {
+      map['poll_seconds'] = Variable<int>(pollSeconds.value);
+    }
     return map;
   }
 
@@ -753,12 +864,14 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     return (StringBuffer('DevicesCompanion(')
           ..write('id: $id, ')
           ..write('roomId: $roomId, ')
+          ..write('kind: $kind, ')
           ..write('name: $name, ')
           ..write('scheme: $scheme, ')
           ..write('host: $host, ')
           ..write('path: $path, ')
           ..write('method: $method, ')
-          ..write('payload: $payload')
+          ..write('payload: $payload, ')
+          ..write('pollSeconds: $pollSeconds')
           ..write(')'))
         .toString();
   }
@@ -957,23 +1070,27 @@ typedef $$DevicesTableCreateCompanionBuilder =
     DevicesCompanion Function({
       Value<int> id,
       required int roomId,
+      Value<DeviceKind> kind,
       required String name,
       Value<String> scheme,
       required String host,
       Value<String> path,
       Value<String> method,
       Value<String> payload,
+      Value<int?> pollSeconds,
     });
 typedef $$DevicesTableUpdateCompanionBuilder =
     DevicesCompanion Function({
       Value<int> id,
       Value<int> roomId,
+      Value<DeviceKind> kind,
       Value<String> name,
       Value<String> scheme,
       Value<String> host,
       Value<String> path,
       Value<String> method,
       Value<String> payload,
+      Value<int?> pollSeconds,
     });
 
 class $$DevicesTableFilterComposer
@@ -994,6 +1111,12 @@ class $$DevicesTableFilterComposer
     column: $table.roomId,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnWithTypeConverterFilters<DeviceKind, DeviceKind, String> get kind =>
+      $composableBuilder(
+        column: $table.kind,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 
   ColumnFilters<String> get name => $composableBuilder(
     column: $table.name,
@@ -1024,6 +1147,11 @@ class $$DevicesTableFilterComposer
     column: $table.payload,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<int> get pollSeconds => $composableBuilder(
+    column: $table.pollSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$DevicesTableOrderingComposer
@@ -1042,6 +1170,11 @@ class $$DevicesTableOrderingComposer
 
   ColumnOrderings<int> get roomId => $composableBuilder(
     column: $table.roomId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -1074,6 +1207,11 @@ class $$DevicesTableOrderingComposer
     column: $table.payload,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get pollSeconds => $composableBuilder(
+    column: $table.pollSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DevicesTableAnnotationComposer
@@ -1090,6 +1228,9 @@ class $$DevicesTableAnnotationComposer
 
   GeneratedColumn<int> get roomId =>
       $composableBuilder(column: $table.roomId, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<DeviceKind, String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -1108,6 +1249,11 @@ class $$DevicesTableAnnotationComposer
 
   GeneratedColumn<String> get payload =>
       $composableBuilder(column: $table.payload, builder: (column) => column);
+
+  GeneratedColumn<int> get pollSeconds => $composableBuilder(
+    column: $table.pollSeconds,
+    builder: (column) => column,
+  );
 }
 
 class $$DevicesTableTableManager
@@ -1140,41 +1286,49 @@ class $$DevicesTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<int> roomId = const Value.absent(),
+                Value<DeviceKind> kind = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> scheme = const Value.absent(),
                 Value<String> host = const Value.absent(),
                 Value<String> path = const Value.absent(),
                 Value<String> method = const Value.absent(),
                 Value<String> payload = const Value.absent(),
+                Value<int?> pollSeconds = const Value.absent(),
               }) => DevicesCompanion(
                 id: id,
                 roomId: roomId,
+                kind: kind,
                 name: name,
                 scheme: scheme,
                 host: host,
                 path: path,
                 method: method,
                 payload: payload,
+                pollSeconds: pollSeconds,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 required int roomId,
+                Value<DeviceKind> kind = const Value.absent(),
                 required String name,
                 Value<String> scheme = const Value.absent(),
                 required String host,
                 Value<String> path = const Value.absent(),
                 Value<String> method = const Value.absent(),
                 Value<String> payload = const Value.absent(),
+                Value<int?> pollSeconds = const Value.absent(),
               }) => DevicesCompanion.insert(
                 id: id,
                 roomId: roomId,
+                kind: kind,
                 name: name,
                 scheme: scheme,
                 host: host,
                 path: path,
                 method: method,
                 payload: payload,
+                pollSeconds: pollSeconds,
               ),
           withReferenceMapper: (p0) => p0
               .map(

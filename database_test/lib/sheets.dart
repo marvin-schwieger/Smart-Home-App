@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 
 import 'database.dart';
+import 'device_presets.dart';
 import 'request.dart';
 import 'room_icons.dart';
 
@@ -19,14 +20,32 @@ Future<void> showAddRoomSheet(BuildContext context, {required int position}) {
   );
 }
 
-// Sheet 2: create a CoAP/HTTP resource inside [room], or edit an existing one
-// when [device] is given
-Future<void> showDeviceSheet(BuildContext context, Room room, {Device? device}) {
+// Sheet 2: pick what to add (a preset like the lamp or a plain resource),
+// then sheet 3 asks for its address
+Future<void> showAddDeviceSheet(BuildContext context, Room room) async {
+  final template = await showModalBottomSheet<DeviceTemplate>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => _DevicePickerSheet(room: room),
+  );
+  if (template == null || !context.mounted) return;
+  await showDeviceSheet(context, room, template: template);
+}
+
+// Sheet 3: create a CoAP/HTTP resource inside [room] from [template], or edit
+// an existing one when [device] is given
+Future<void> showDeviceSheet(
+  BuildContext context,
+  Room room, {
+  Device? device,
+  DeviceTemplate? template,
+}) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (_) => _DeviceSheet(room: room, device: device),
+    builder: (_) => _DeviceSheet(room: room, device: device, template: template),
   );
 }
 
@@ -92,13 +111,120 @@ class _AddRoomSheetState extends State<_AddRoomSheet> {
   }
 }
 
+class _DevicePickerSheet extends StatelessWidget {
+  final Room room;
+
+  const _DevicePickerSheet({required this.room});
+
+  @override
+  Widget build(BuildContext context) {
+    // A set keeps the order in which the groups first appear
+    final groups = {for (final template in deviceTemplates) template.group};
+
+    return _SheetBody(
+      title: 'Add a device',
+      subtitle: 'To ${room.name}. Pick what it is - you set the address next.',
+      children: [
+        for (final group in groups) ...[
+          Text(
+            group.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 12,
+              letterSpacing: 1.2,
+              color: _subtitleColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          GridView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisExtent: 64,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+            ),
+            children: [
+              for (final template in deviceTemplates)
+                if (template.group == group) _TemplateTile(template: template),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+      ],
+    );
+  }
+}
+
+// Closes the picker with its template as result
+class _TemplateTile extends StatelessWidget {
+  final DeviceTemplate template;
+
+  const _TemplateTile({required this.template});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => Navigator.pop(context, template),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          border: Border.all(color: _fieldColor, width: 1.5),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _fieldColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(template.icon, size: 20, color: Colors.black87),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    template.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    template.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                      color: _subtitleColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _DeviceSheet extends StatefulWidget {
   final Room room;
 
   // null while creating, set while editing an existing device.
   final Device? device;
 
-  const _DeviceSheet({required this.room, required this.device});
+  // Picked in the "Add a device" sheet, only set while creating
+  final DeviceTemplate? template;
+
+  const _DeviceSheet({required this.room, required this.device, required this.template});
 
   @override
   State<_DeviceSheet> createState() => _DeviceSheetState();
@@ -109,20 +235,28 @@ class _DeviceSheetState extends State<_DeviceSheet> {
   late final TextEditingController _hostCtrl;
   late final TextEditingController _pathCtrl;
   late final TextEditingController _payloadCtrl;
+  late final DeviceKind _kind;
   late String _scheme;
   late String _method;
+
+  // Only set for sensors that poll
+  int? _pollSeconds;
 
   @override
   void initState() {
     super.initState();
-    // While editing the fields start with the stored values.
+    // While editing the fields start with the stored values, while creating
+    // with the defaults of the picked template.
     final device = widget.device;
+    final template = widget.template;
+    _kind = device?.kind ?? template?.kind ?? DeviceKind.custom;
     _nameCtrl = TextEditingController(text: device?.name ?? '');
     _hostCtrl = TextEditingController(text: device?.host ?? '');
     _pathCtrl = TextEditingController(text: device?.path ?? '/');
-    _payloadCtrl = TextEditingController(text: device?.payload ?? '');
-    _scheme = device?.scheme ?? 'coap';
-    _method = device?.method ?? 'GET';
+    _payloadCtrl = TextEditingController(text: device?.payload ?? _kind.initialPayload);
+    _scheme = device?.scheme ?? template?.scheme ?? 'coap';
+    _method = device?.method ?? _kind.fixedMethod ?? 'GET';
+    _pollSeconds = device?.pollSeconds ?? _kind.defaultPollSeconds;
   }
 
   @override
@@ -141,12 +275,14 @@ class _DeviceSheetState extends State<_DeviceSheet> {
     final device = widget.device;
     final values = DevicesCompanion(
       roomId: Value(widget.room.id),
+      kind: Value(_kind),
       name: Value(_nameCtrl.text.trim()),
       host: Value(_hostCtrl.text.trim()),
       scheme: Value(_scheme),
       path: Value(normalizePath(_pathCtrl.text)),
       method: Value(_method),
       payload: Value(_payloadCtrl.text),
+      pollSeconds: Value(_pollSeconds),
     );
 
     if (device == null) {
@@ -162,9 +298,11 @@ class _DeviceSheetState extends State<_DeviceSheet> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.device != null;
+    final fixedMethod = _kind.fixedMethod;
+    final what = _kind.label ?? '$_scheme resource';
 
     return _SheetBody(
-      title: isEditing ? 'Edit $_scheme resource' : 'New $_scheme resource',
+      title: isEditing ? 'Edit $what' : 'New $what',
       subtitle: 'in ${widget.room.name}',
       children: [
         TextField(
@@ -202,21 +340,34 @@ class _DeviceSheetState extends State<_DeviceSheet> {
           ],
         ),
         const SizedBox(height: 16),
-        const Text('Method', style: TextStyle(fontSize: 13, color: _subtitleColor)),
-        const SizedBox(height: 8),
-        _ChoiceRow(
-          options: requestMethods,
-          selected: _method,
-          onSelected: (option) => setState(() => _method = option),
-        ),
-        // Only POST/PUT/DELETE carry a body, so the field appears just for those.
-        if (methodHasPayload(_method)) ...[
-          const SizedBox(height: 16),
-          TextField(
-            controller: _payloadCtrl,
-            maxLines: 3,
-            decoration: _fieldDecoration('PAYLOAD', hint: '{"on": true}'),
+        // Presets send a fixed method: sensors request it in an interval, the
+        // others with a payload built by their controls
+        if (_pollSeconds != null) ...[
+          const Text('Polling interval', style: TextStyle(fontSize: 13, color: _subtitleColor)),
+          const SizedBox(height: 8),
+          PollIntervalPicker(
+            seconds: _pollSeconds!,
+            onChanged: (seconds) => setState(() => _pollSeconds = seconds),
           ),
+        ] else if (fixedMethod != null)
+          _PayloadPreview(method: fixedMethod, payload: _payloadCtrl.text)
+        else ...[
+          const Text('Method', style: TextStyle(fontSize: 13, color: _subtitleColor)),
+          const SizedBox(height: 8),
+          _ChoiceRow(
+            options: requestMethods,
+            selected: _method,
+            onSelected: (option) => setState(() => _method = option),
+          ),
+          // Only POST/PUT/DELETE carry a body, so the field appears just for those.
+          if (methodHasPayload(_method)) ...[
+            const SizedBox(height: 16),
+            TextField(
+              controller: _payloadCtrl,
+              maxLines: 3,
+              decoration: _fieldDecoration('PAYLOAD', hint: '{"on": true}'),
+            ),
+          ],
         ],
         const SizedBox(height: 16),
         _UriPreview(
@@ -394,6 +545,40 @@ class _UriPreview extends StatelessWidget {
               text,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Read-only request body of a preset, it changes later through the device page
+class _PayloadPreview extends StatelessWidget {
+  final String method;
+  final String payload;
+
+  const _PayloadPreview({required this.method, required this.payload});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _fieldColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$method - payload is filled in by the controls',
+            style: const TextStyle(fontSize: 13, color: _subtitleColor),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            payload,
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
           ),
         ],
       ),
