@@ -1,0 +1,27 @@
+name: database_test
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.1
+
+dependencies:
+  coap: ^9.2.1
+  drift: ^2.34.4
+  flutter:
+    sdk: flutter
+  http: ^1.6.0
+  path: ^1.9.1
+  path_provider: ^2.1.6
+  reorderable_grid_view: ^2.2.8
+  sqlite3_flutter_libs: ^0.6.0+eol
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.15.1
+  drift_dev: ^2.34.6
+flutter:
+  uses-material-design: true

@@ -1,0 +1,6 @@
+aiocoap
+asyncio
+uvicorn
+fastapi
+logging
+datetime
