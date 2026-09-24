@@ -1,14 +1,15 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 
 import 'database.dart';
 import 'device_presets.dart';
+import 'device_session.dart';
 import 'request.dart';
 import 'room_icons.dart';
-
-// Colors reused by the sheet controls.
-const Color _fieldColor = Color(0xFFEDE9E3);
-const Color _subtitleColor = Color(0xFF8D6E4A);
+import 'ui.dart';
+import 'widgets/sensors/poll_rate.dart';
 
 // Sheet 1: create a room - only a name and an icon are needed.
 Future<void> showAddRoomSheet(BuildContext context, {required int position}) {
@@ -20,28 +21,28 @@ Future<void> showAddRoomSheet(BuildContext context, {required int position}) {
   );
 }
 
-// Sheet 2: pick what to add (a preset like the lamp or a plain resource),
-// then sheet 3 asks for its address
-Future<void> showAddDeviceSheet(BuildContext context, Room room) async {
+// Sheet 2: pick a sensor, an actuator or a preset, then sheet 3 asks for its
+// address. Returns the new device, null if the user backed out
+Future<Device?> showAddDeviceSheet(BuildContext context, Room room) async {
   final template = await showModalBottomSheet<DeviceTemplate>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     builder: (_) => _DevicePickerSheet(room: room),
   );
-  if (template == null || !context.mounted) return;
-  await showDeviceSheet(context, room, template: template);
+  if (template == null || !context.mounted) return null;
+  return showDeviceSheet(context, room, template: template);
 }
 
-// Sheet 3: create a CoAP/HTTP resource inside [room] from [template], or edit
-// an existing one when [device] is given
-Future<void> showDeviceSheet(
+// Sheet 3: create a CoAP/HTTP device inside [room] from [template], or edit
+// an existing one when [device] is given. Returns the saved device
+Future<Device?> showDeviceSheet(
   BuildContext context,
   Room room, {
   Device? device,
   DeviceTemplate? template,
 }) {
-  return showModalBottomSheet<void>(
+  return showModalBottomSheet<Device>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
@@ -83,25 +84,24 @@ class _AddRoomSheetState extends State<_AddRoomSheet> {
   Widget build(BuildContext context) {
     final hasName = _nameCtrl.text.trim().isNotEmpty;
 
-    return _SheetBody(
+    return SheetBody(
       title: 'Add a room',
       subtitle: 'Name it after the real room - devices get grouped under it.',
       children: [
         TextField(
           controller: _nameCtrl,
           autofocus: true,
-          decoration: _fieldDecoration('NAME', hint: 'e.g. Living room'),
+          decoration: fieldDecoration('NAME', hint: 'e.g. Living room'),
           onChanged: (_) => setState(() {}), // keeps the save button in sync
         ),
         const SizedBox(height: 16),
-        const Text('Icon', style: TextStyle(fontSize: 13, color: _subtitleColor)),
-        const SizedBox(height: 8),
+        const FieldLabel('Icon'),
         _IconPicker(
           selected: _iconIndex,
           onSelected: (index) => setState(() => _iconIndex = index),
         ),
         const SizedBox(height: 20),
-        _SaveButton(
+        SaveButton(
           enabled: hasName,
           label: hasName ? 'Add room' : 'Give the room a name',
           onPressed: _save,
@@ -121,96 +121,29 @@ class _DevicePickerSheet extends StatelessWidget {
     // A set keeps the order in which the groups first appear
     final groups = {for (final template in deviceTemplates) template.group};
 
-    return _SheetBody(
+    return SheetBody(
       title: 'Add a device',
-      subtitle: 'To ${room.name}. Pick what it is - you set the address next.',
+      subtitle: 'To ${room.name}. Pick what it is - you set the address next '
+          'and add widgets on its page.',
       children: [
         for (final group in groups) ...[
-          Text(
-            group.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 12,
-              letterSpacing: 1.2,
-              color: _subtitleColor,
-            ),
-          ),
+          GroupLabel(group),
           const SizedBox(height: 8),
-          GridView(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisExtent: 64,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-            ),
+          PickerGrid(
             children: [
               for (final template in deviceTemplates)
-                if (template.group == group) _TemplateTile(template: template),
+                if (template.group == group)
+                  PickerTile<DeviceTemplate>(
+                    value: template,
+                    icon: template.icon,
+                    label: template.label,
+                    subtitle: template.subtitle,
+                  ),
             ],
           ),
           const SizedBox(height: 16),
         ],
       ],
-    );
-  }
-}
-
-// Closes the picker with its template as result
-class _TemplateTile extends StatelessWidget {
-  final DeviceTemplate template;
-
-  const _TemplateTile({required this.template});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => Navigator.pop(context, template),
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          border: Border.all(color: _fieldColor, width: 1.5),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _fieldColor,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(template.icon, size: 20, color: Colors.black87),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    template.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    template.subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 11,
-                      color: _subtitleColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -235,12 +168,12 @@ class _DeviceSheetState extends State<_DeviceSheet> {
   late final TextEditingController _hostCtrl;
   late final TextEditingController _pathCtrl;
   late final TextEditingController _payloadCtrl;
-  late final DeviceKind _kind;
+
+  // Fixed once the device exists, its widgets depend on it
+  late final DeviceRole _role;
   late String _scheme;
   late String _method;
-
-  // Only set for sensors that poll
-  int? _pollSeconds;
+  late int _pollSeconds;
 
   @override
   void initState() {
@@ -249,14 +182,14 @@ class _DeviceSheetState extends State<_DeviceSheet> {
     // with the defaults of the picked template.
     final device = widget.device;
     final template = widget.template;
-    _kind = device?.kind ?? template?.kind ?? DeviceKind.custom;
+    _role = device?.role ?? template?.role ?? DeviceRole.actuator;
     _nameCtrl = TextEditingController(text: device?.name ?? '');
     _hostCtrl = TextEditingController(text: device?.host ?? '');
     _pathCtrl = TextEditingController(text: device?.path ?? '/');
-    _payloadCtrl = TextEditingController(text: device?.payload ?? _kind.initialPayload);
-    _scheme = device?.scheme ?? template?.scheme ?? 'coap';
-    _method = device?.method ?? _kind.fixedMethod ?? 'GET';
-    _pollSeconds = device?.pollSeconds ?? _kind.defaultPollSeconds;
+    _payloadCtrl = TextEditingController(text: device?.payload ?? template?.payload ?? '');
+    _scheme = device?.scheme ?? 'coap';
+    _method = device?.method ?? _role.defaultMethod;
+    _pollSeconds = device?.pollSeconds ?? DeviceSession.defaultPollSeconds;
   }
 
   @override
@@ -272,48 +205,59 @@ class _DeviceSheetState extends State<_DeviceSheet> {
       _nameCtrl.text.trim().isNotEmpty && _hostCtrl.text.trim().isNotEmpty;
 
   Future<void> _save() async {
-    final device = widget.device;
     final values = DevicesCompanion(
       roomId: Value(widget.room.id),
-      kind: Value(_kind),
+      role: Value(_role),
       name: Value(_nameCtrl.text.trim()),
       host: Value(_hostCtrl.text.trim()),
       scheme: Value(_scheme),
       path: Value(normalizePath(_pathCtrl.text)),
       method: Value(_method),
       payload: Value(_payloadCtrl.text),
-      pollSeconds: Value(_pollSeconds),
+      pollSeconds: Value(_role == DeviceRole.sensor ? _pollSeconds : null),
     );
 
-    if (device == null) {
-      await database.into(database.devices).insert(values);
+    final existing = widget.device;
+    final int id;
+    if (existing == null) {
+      id = await database.into(database.devices).insert(values);
+      for (final (kind, config) in [...?widget.template?.widgets]) {
+        await database.addWidget(id, kind, jsonEncode(config));
+      }
     } else {
-      await (database.update(database.devices)
-            ..where((t) => t.id.equals(device.id)))
-          .write(values);
+      id = existing.id;
+      await (database.update(database.devices)..where((t) => t.id.equals(id))).write(values);
     }
-    if (mounted) Navigator.pop(context);
+
+    final saved = await (database.select(database.devices)
+          ..where((t) => t.id.equals(id)))
+        .getSingle();
+    updateDeviceSession(saved); // a sensor polls the new address right away
+    if (mounted) Navigator.pop(context, saved);
   }
 
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.device != null;
-    final fixedMethod = _kind.fixedMethod;
-    final what = _kind.label ?? '$_scheme resource';
+    final isSensor = _role == DeviceRole.sensor;
 
-    return _SheetBody(
-      title: isEditing ? 'Edit $what' : 'New $what',
-      subtitle: 'in ${widget.room.name}',
+    return SheetBody(
+      title: isEditing ? 'Edit ${_role.label}' : 'New ${_role.label}',
+      subtitle: isSensor
+          ? 'in ${widget.room.name} · requested in an interval'
+          : 'in ${widget.room.name} · requested when a widget changes something',
       children: [
         TextField(
           controller: _nameCtrl,
-          decoration: _fieldDecoration('NAME', hint: 'Desk sensor'),
+          decoration: fieldDecoration(
+            'NAME',
+            hint: isSensor ? 'e.g. Temperature sensor' : 'e.g. Desk lamp',
+          ),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 16),
-        const Text('Transport', style: TextStyle(fontSize: 13, color: _subtitleColor)),
-        const SizedBox(height: 8),
-        _ChoiceRow(
+        const FieldLabel('Transport'),
+        ChoiceRow(
           options: const ['coap', 'http'],
           selected: _scheme,
           labelBuilder: (option) => '$option://',
@@ -325,7 +269,7 @@ class _DeviceSheetState extends State<_DeviceSheet> {
             Expanded(
               child: TextField(
                 controller: _hostCtrl,
-                decoration: _fieldDecoration('HOST', hint: '192.168.1.5'),
+                decoration: fieldDecoration('HOST', hint: '192.168.1.5'),
                 onChanged: (_) => setState(() {}), // updates the URI preview
               ),
             ),
@@ -333,41 +277,45 @@ class _DeviceSheetState extends State<_DeviceSheet> {
             Expanded(
               child: TextField(
                 controller: _pathCtrl,
-                decoration: _fieldDecoration('PATH', hint: '/actuator'),
+                decoration: fieldDecoration(
+                  'PATH',
+                  hint: isSensor ? '/temperature' : '/actuator',
+                ),
                 onChanged: (_) => setState(() {}),
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        // Presets send a fixed method: sensors request it in an interval, the
-        // others with a payload built by their controls
-        if (_pollSeconds != null) ...[
-          const Text('Polling interval', style: TextStyle(fontSize: 13, color: _subtitleColor)),
-          const SizedBox(height: 8),
+        const FieldLabel('Method'),
+        ChoiceRow(
+          options: requestMethods,
+          selected: _method,
+          onSelected: (option) => setState(() => _method = option),
+        ),
+        // Only POST/PUT/DELETE carry a body, so the field appears just for those.
+        if (methodHasPayload(_method)) ...[
+          const SizedBox(height: 16),
+          TextField(
+            controller: _payloadCtrl,
+            maxLines: 3,
+            decoration: fieldDecoration(
+              'PAYLOAD',
+              hint: '{"on": true}',
+              helper: isSensor
+                  ? 'Sent with every request'
+                  : 'Switches, sliders and colours change their field in it '
+                      'before it is sent',
+            ),
+          ),
+        ],
+        if (isSensor) ...[
+          const SizedBox(height: 16),
+          const FieldLabel('Polling interval'),
           PollIntervalPicker(
-            seconds: _pollSeconds!,
+            seconds: _pollSeconds,
             onChanged: (seconds) => setState(() => _pollSeconds = seconds),
           ),
-        ] else if (fixedMethod != null)
-          _PayloadPreview(method: fixedMethod, payload: _payloadCtrl.text)
-        else ...[
-          const Text('Method', style: TextStyle(fontSize: 13, color: _subtitleColor)),
-          const SizedBox(height: 8),
-          _ChoiceRow(
-            options: requestMethods,
-            selected: _method,
-            onSelected: (option) => setState(() => _method = option),
-          ),
-          // Only POST/PUT/DELETE carry a body, so the field appears just for those.
-          if (methodHasPayload(_method)) ...[
-            const SizedBox(height: 16),
-            TextField(
-              controller: _payloadCtrl,
-              maxLines: 3,
-              decoration: _fieldDecoration('PAYLOAD', hint: '{"on": true}'),
-            ),
-          ],
         ],
         const SizedBox(height: 16),
         _UriPreview(
@@ -376,105 +324,16 @@ class _DeviceSheetState extends State<_DeviceSheet> {
           path: _pathCtrl.text,
         ),
         const SizedBox(height: 20),
-        _SaveButton(
+        SaveButton(
           enabled: _isValid,
           label: !_isValid
               ? 'Name it and set a host'
               : isEditing
                   ? 'Save changes'
-                  : 'Save resource',
+                  : 'Save ${_role.label}',
           onPressed: _save,
         ),
       ],
-    );
-  }
-}
-
-// Shared frame for both sheets: title, subtitle and the form below it.
-class _SheetBody extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final List<Widget> children;
-
-  const _SheetBody({
-    required this.title,
-    required this.subtitle,
-    required this.children,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      // The bottom inset keeps the form above the on-screen keyboard.
-      padding: EdgeInsets.fromLTRB(
-        20,
-        0,
-        20,
-        20 + MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(fontSize: 13, color: _subtitleColor)),
-          const SizedBox(height: 20),
-          ...children,
-        ],
-      ),
-    );
-  }
-}
-
-// Row of buttons where exactly one option is selected.
-class _ChoiceRow extends StatelessWidget {
-  final List<String> options;
-  final String selected;
-  final ValueChanged<String> onSelected;
-  final String Function(String option)? labelBuilder;
-
-  const _ChoiceRow({
-    required this.options,
-    required this.selected,
-    required this.onSelected,
-    this.labelBuilder,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (var i = 0; i < options.length; i++) ...[
-          if (i > 0) const SizedBox(width: 8),
-          Expanded(child: _button(context, options[i])),
-        ],
-      ],
-    );
-  }
-
-  Widget _button(BuildContext context, String option) {
-    final isSelected = option == selected;
-
-    return InkWell(
-      onTap: () => onSelected(option),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        height: 44,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isSelected ? Theme.of(context).colorScheme.primary : _fieldColor,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          labelBuilder?.call(option) ?? option,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: isSelected ? Colors.white : Colors.black54,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -500,7 +359,7 @@ class _IconPicker extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             child: Container(
               decoration: BoxDecoration(
-                color: i == selected ? Theme.of(context).colorScheme.primary : _fieldColor,
+                color: i == selected ? Theme.of(context).colorScheme.primary : fieldColor,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -533,7 +392,7 @@ class _UriPreview extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _fieldColor,
+        color: fieldColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -551,76 +410,3 @@ class _UriPreview extends StatelessWidget {
     );
   }
 }
-
-// Read-only request body of a preset, it changes later through the device page
-class _PayloadPreview extends StatelessWidget {
-  final String method;
-  final String payload;
-
-  const _PayloadPreview({required this.method, required this.payload});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _fieldColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$method - payload is filled in by the controls',
-            style: const TextStyle(fontSize: 13, color: _subtitleColor),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            payload,
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SaveButton extends StatelessWidget {
-  final bool enabled;
-  final String label;
-  final VoidCallback onPressed;
-
-  const _SaveButton({
-    required this.enabled,
-    required this.label,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: FilledButton(
-        // Stays disabled until the required fields are filled in
-        onPressed: enabled ? onPressed : null,
-        style: FilledButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        ),
-        child: Text(label),
-      ),
-    );
-  }
-}
-
-InputDecoration _fieldDecoration(String label, {String? hint}) => InputDecoration(
-      labelText: label,
-      hintText: hint,
-      filled: true,
-      fillColor: _fieldColor,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-    );

@@ -319,15 +319,14 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
     requiredDuringInsert: true,
   );
   @override
-  late final GeneratedColumnWithTypeConverter<DeviceKind, String> kind =
+  late final GeneratedColumnWithTypeConverter<DeviceRole, String> role =
       GeneratedColumn<String>(
-        'kind',
+        'role',
         aliasedName,
         false,
         type: DriftSqlType.string,
-        requiredDuringInsert: false,
-        defaultValue: const Constant('custom'),
-      ).withConverter<DeviceKind>($DevicesTable.$converterkind);
+        requiredDuringInsert: true,
+      ).withConverter<DeviceRole>($DevicesTable.$converterrole);
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
@@ -403,7 +402,7 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
   List<GeneratedColumn> get $columns => [
     id,
     roomId,
-    kind,
+    role,
     name,
     scheme,
     host,
@@ -501,10 +500,10 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
         DriftSqlType.int,
         data['${effectivePrefix}room_id'],
       )!,
-      kind: $DevicesTable.$converterkind.fromSql(
+      role: $DevicesTable.$converterrole.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.string,
-          data['${effectivePrefix}kind'],
+          data['${effectivePrefix}role'],
         )!,
       ),
       name: attachedDatabase.typeMapping.read(
@@ -543,14 +542,14 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
     return $DevicesTable(attachedDatabase, alias);
   }
 
-  static JsonTypeConverter2<DeviceKind, String, String> $converterkind =
-      const EnumNameConverter<DeviceKind>(DeviceKind.values);
+  static JsonTypeConverter2<DeviceRole, String, String> $converterrole =
+      const EnumNameConverter<DeviceRole>(DeviceRole.values);
 }
 
 class Device extends DataClass implements Insertable<Device> {
   final int id;
   final int roomId;
-  final DeviceKind kind;
+  final DeviceRole role;
   final String name;
   final String scheme;
   final String host;
@@ -561,7 +560,7 @@ class Device extends DataClass implements Insertable<Device> {
   const Device({
     required this.id,
     required this.roomId,
-    required this.kind,
+    required this.role,
     required this.name,
     required this.scheme,
     required this.host,
@@ -576,7 +575,7 @@ class Device extends DataClass implements Insertable<Device> {
     map['id'] = Variable<int>(id);
     map['room_id'] = Variable<int>(roomId);
     {
-      map['kind'] = Variable<String>($DevicesTable.$converterkind.toSql(kind));
+      map['role'] = Variable<String>($DevicesTable.$converterrole.toSql(role));
     }
     map['name'] = Variable<String>(name);
     map['scheme'] = Variable<String>(scheme);
@@ -594,7 +593,7 @@ class Device extends DataClass implements Insertable<Device> {
     return DevicesCompanion(
       id: Value(id),
       roomId: Value(roomId),
-      kind: Value(kind),
+      role: Value(role),
       name: Value(name),
       scheme: Value(scheme),
       host: Value(host),
@@ -615,8 +614,8 @@ class Device extends DataClass implements Insertable<Device> {
     return Device(
       id: serializer.fromJson<int>(json['id']),
       roomId: serializer.fromJson<int>(json['roomId']),
-      kind: $DevicesTable.$converterkind.fromJson(
-        serializer.fromJson<String>(json['kind']),
+      role: $DevicesTable.$converterrole.fromJson(
+        serializer.fromJson<String>(json['role']),
       ),
       name: serializer.fromJson<String>(json['name']),
       scheme: serializer.fromJson<String>(json['scheme']),
@@ -633,8 +632,8 @@ class Device extends DataClass implements Insertable<Device> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'roomId': serializer.toJson<int>(roomId),
-      'kind': serializer.toJson<String>(
-        $DevicesTable.$converterkind.toJson(kind),
+      'role': serializer.toJson<String>(
+        $DevicesTable.$converterrole.toJson(role),
       ),
       'name': serializer.toJson<String>(name),
       'scheme': serializer.toJson<String>(scheme),
@@ -649,7 +648,7 @@ class Device extends DataClass implements Insertable<Device> {
   Device copyWith({
     int? id,
     int? roomId,
-    DeviceKind? kind,
+    DeviceRole? role,
     String? name,
     String? scheme,
     String? host,
@@ -660,7 +659,7 @@ class Device extends DataClass implements Insertable<Device> {
   }) => Device(
     id: id ?? this.id,
     roomId: roomId ?? this.roomId,
-    kind: kind ?? this.kind,
+    role: role ?? this.role,
     name: name ?? this.name,
     scheme: scheme ?? this.scheme,
     host: host ?? this.host,
@@ -673,7 +672,7 @@ class Device extends DataClass implements Insertable<Device> {
     return Device(
       id: data.id.present ? data.id.value : this.id,
       roomId: data.roomId.present ? data.roomId.value : this.roomId,
-      kind: data.kind.present ? data.kind.value : this.kind,
+      role: data.role.present ? data.role.value : this.role,
       name: data.name.present ? data.name.value : this.name,
       scheme: data.scheme.present ? data.scheme.value : this.scheme,
       host: data.host.present ? data.host.value : this.host,
@@ -691,7 +690,7 @@ class Device extends DataClass implements Insertable<Device> {
     return (StringBuffer('Device(')
           ..write('id: $id, ')
           ..write('roomId: $roomId, ')
-          ..write('kind: $kind, ')
+          ..write('role: $role, ')
           ..write('name: $name, ')
           ..write('scheme: $scheme, ')
           ..write('host: $host, ')
@@ -707,7 +706,7 @@ class Device extends DataClass implements Insertable<Device> {
   int get hashCode => Object.hash(
     id,
     roomId,
-    kind,
+    role,
     name,
     scheme,
     host,
@@ -722,7 +721,7 @@ class Device extends DataClass implements Insertable<Device> {
       (other is Device &&
           other.id == this.id &&
           other.roomId == this.roomId &&
-          other.kind == this.kind &&
+          other.role == this.role &&
           other.name == this.name &&
           other.scheme == this.scheme &&
           other.host == this.host &&
@@ -735,7 +734,7 @@ class Device extends DataClass implements Insertable<Device> {
 class DevicesCompanion extends UpdateCompanion<Device> {
   final Value<int> id;
   final Value<int> roomId;
-  final Value<DeviceKind> kind;
+  final Value<DeviceRole> role;
   final Value<String> name;
   final Value<String> scheme;
   final Value<String> host;
@@ -746,7 +745,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
   const DevicesCompanion({
     this.id = const Value.absent(),
     this.roomId = const Value.absent(),
-    this.kind = const Value.absent(),
+    this.role = const Value.absent(),
     this.name = const Value.absent(),
     this.scheme = const Value.absent(),
     this.host = const Value.absent(),
@@ -758,7 +757,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
   DevicesCompanion.insert({
     this.id = const Value.absent(),
     required int roomId,
-    this.kind = const Value.absent(),
+    required DeviceRole role,
     required String name,
     this.scheme = const Value.absent(),
     required String host,
@@ -767,12 +766,13 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     this.payload = const Value.absent(),
     this.pollSeconds = const Value.absent(),
   }) : roomId = Value(roomId),
+       role = Value(role),
        name = Value(name),
        host = Value(host);
   static Insertable<Device> custom({
     Expression<int>? id,
     Expression<int>? roomId,
-    Expression<String>? kind,
+    Expression<String>? role,
     Expression<String>? name,
     Expression<String>? scheme,
     Expression<String>? host,
@@ -784,7 +784,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (roomId != null) 'room_id': roomId,
-      if (kind != null) 'kind': kind,
+      if (role != null) 'role': role,
       if (name != null) 'name': name,
       if (scheme != null) 'scheme': scheme,
       if (host != null) 'host': host,
@@ -798,7 +798,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
   DevicesCompanion copyWith({
     Value<int>? id,
     Value<int>? roomId,
-    Value<DeviceKind>? kind,
+    Value<DeviceRole>? role,
     Value<String>? name,
     Value<String>? scheme,
     Value<String>? host,
@@ -810,7 +810,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     return DevicesCompanion(
       id: id ?? this.id,
       roomId: roomId ?? this.roomId,
-      kind: kind ?? this.kind,
+      role: role ?? this.role,
       name: name ?? this.name,
       scheme: scheme ?? this.scheme,
       host: host ?? this.host,
@@ -830,9 +830,9 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     if (roomId.present) {
       map['room_id'] = Variable<int>(roomId.value);
     }
-    if (kind.present) {
-      map['kind'] = Variable<String>(
-        $DevicesTable.$converterkind.toSql(kind.value),
+    if (role.present) {
+      map['role'] = Variable<String>(
+        $DevicesTable.$converterrole.toSql(role.value),
       );
     }
     if (name.present) {
@@ -864,7 +864,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     return (StringBuffer('DevicesCompanion(')
           ..write('id: $id, ')
           ..write('roomId: $roomId, ')
-          ..write('kind: $kind, ')
+          ..write('role: $role, ')
           ..write('name: $name, ')
           ..write('scheme: $scheme, ')
           ..write('host: $host, ')
@@ -877,16 +877,366 @@ class DevicesCompanion extends UpdateCompanion<Device> {
   }
 }
 
+class $DeviceWidgetsTable extends DeviceWidgets
+    with TableInfo<$DeviceWidgetsTable, DeviceWidget> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DeviceWidgetsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<int> deviceId = GeneratedColumn<int>(
+    'device_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<WidgetKind, String> kind =
+      GeneratedColumn<String>(
+        'kind',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<WidgetKind>($DeviceWidgetsTable.$converterkind);
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _configMeta = const VerificationMeta('config');
+  @override
+  late final GeneratedColumn<String> config = GeneratedColumn<String>(
+    'config',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, deviceId, kind, position, config];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'device_widgets';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DeviceWidget> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deviceIdMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    }
+    if (data.containsKey('config')) {
+      context.handle(
+        _configMeta,
+        config.isAcceptableOrUnknown(data['config']!, _configMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DeviceWidget map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DeviceWidget(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      deviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}device_id'],
+      )!,
+      kind: $DeviceWidgetsTable.$converterkind.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}kind'],
+        )!,
+      ),
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+      config: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}config'],
+      )!,
+    );
+  }
+
+  @override
+  $DeviceWidgetsTable createAlias(String alias) {
+    return $DeviceWidgetsTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<WidgetKind, String, String> $converterkind =
+      const EnumNameConverter<WidgetKind>(WidgetKind.values);
+}
+
+class DeviceWidget extends DataClass implements Insertable<DeviceWidget> {
+  final int id;
+  final int deviceId;
+  final WidgetKind kind;
+  final int position;
+  final String config;
+  const DeviceWidget({
+    required this.id,
+    required this.deviceId,
+    required this.kind,
+    required this.position,
+    required this.config,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['device_id'] = Variable<int>(deviceId);
+    {
+      map['kind'] = Variable<String>(
+        $DeviceWidgetsTable.$converterkind.toSql(kind),
+      );
+    }
+    map['position'] = Variable<int>(position);
+    map['config'] = Variable<String>(config);
+    return map;
+  }
+
+  DeviceWidgetsCompanion toCompanion(bool nullToAbsent) {
+    return DeviceWidgetsCompanion(
+      id: Value(id),
+      deviceId: Value(deviceId),
+      kind: Value(kind),
+      position: Value(position),
+      config: Value(config),
+    );
+  }
+
+  factory DeviceWidget.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DeviceWidget(
+      id: serializer.fromJson<int>(json['id']),
+      deviceId: serializer.fromJson<int>(json['deviceId']),
+      kind: $DeviceWidgetsTable.$converterkind.fromJson(
+        serializer.fromJson<String>(json['kind']),
+      ),
+      position: serializer.fromJson<int>(json['position']),
+      config: serializer.fromJson<String>(json['config']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'deviceId': serializer.toJson<int>(deviceId),
+      'kind': serializer.toJson<String>(
+        $DeviceWidgetsTable.$converterkind.toJson(kind),
+      ),
+      'position': serializer.toJson<int>(position),
+      'config': serializer.toJson<String>(config),
+    };
+  }
+
+  DeviceWidget copyWith({
+    int? id,
+    int? deviceId,
+    WidgetKind? kind,
+    int? position,
+    String? config,
+  }) => DeviceWidget(
+    id: id ?? this.id,
+    deviceId: deviceId ?? this.deviceId,
+    kind: kind ?? this.kind,
+    position: position ?? this.position,
+    config: config ?? this.config,
+  );
+  DeviceWidget copyWithCompanion(DeviceWidgetsCompanion data) {
+    return DeviceWidget(
+      id: data.id.present ? data.id.value : this.id,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      position: data.position.present ? data.position.value : this.position,
+      config: data.config.present ? data.config.value : this.config,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeviceWidget(')
+          ..write('id: $id, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('kind: $kind, ')
+          ..write('position: $position, ')
+          ..write('config: $config')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, deviceId, kind, position, config);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DeviceWidget &&
+          other.id == this.id &&
+          other.deviceId == this.deviceId &&
+          other.kind == this.kind &&
+          other.position == this.position &&
+          other.config == this.config);
+}
+
+class DeviceWidgetsCompanion extends UpdateCompanion<DeviceWidget> {
+  final Value<int> id;
+  final Value<int> deviceId;
+  final Value<WidgetKind> kind;
+  final Value<int> position;
+  final Value<String> config;
+  const DeviceWidgetsCompanion({
+    this.id = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.position = const Value.absent(),
+    this.config = const Value.absent(),
+  });
+  DeviceWidgetsCompanion.insert({
+    this.id = const Value.absent(),
+    required int deviceId,
+    required WidgetKind kind,
+    this.position = const Value.absent(),
+    this.config = const Value.absent(),
+  }) : deviceId = Value(deviceId),
+       kind = Value(kind);
+  static Insertable<DeviceWidget> custom({
+    Expression<int>? id,
+    Expression<int>? deviceId,
+    Expression<String>? kind,
+    Expression<int>? position,
+    Expression<String>? config,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (deviceId != null) 'device_id': deviceId,
+      if (kind != null) 'kind': kind,
+      if (position != null) 'position': position,
+      if (config != null) 'config': config,
+    });
+  }
+
+  DeviceWidgetsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? deviceId,
+    Value<WidgetKind>? kind,
+    Value<int>? position,
+    Value<String>? config,
+  }) {
+    return DeviceWidgetsCompanion(
+      id: id ?? this.id,
+      deviceId: deviceId ?? this.deviceId,
+      kind: kind ?? this.kind,
+      position: position ?? this.position,
+      config: config ?? this.config,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<int>(deviceId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(
+        $DeviceWidgetsTable.$converterkind.toSql(kind.value),
+      );
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (config.present) {
+      map['config'] = Variable<String>(config.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeviceWidgetsCompanion(')
+          ..write('id: $id, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('kind: $kind, ')
+          ..write('position: $position, ')
+          ..write('config: $config')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $RoomsTable rooms = $RoomsTable(this);
   late final $DevicesTable devices = $DevicesTable(this);
+  late final $DeviceWidgetsTable deviceWidgets = $DeviceWidgetsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [rooms, devices];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    rooms,
+    devices,
+    deviceWidgets,
+  ];
 }
 
 typedef $$RoomsTableCreateCompanionBuilder =
@@ -1070,7 +1420,7 @@ typedef $$DevicesTableCreateCompanionBuilder =
     DevicesCompanion Function({
       Value<int> id,
       required int roomId,
-      Value<DeviceKind> kind,
+      required DeviceRole role,
       required String name,
       Value<String> scheme,
       required String host,
@@ -1083,7 +1433,7 @@ typedef $$DevicesTableUpdateCompanionBuilder =
     DevicesCompanion Function({
       Value<int> id,
       Value<int> roomId,
-      Value<DeviceKind> kind,
+      Value<DeviceRole> role,
       Value<String> name,
       Value<String> scheme,
       Value<String> host,
@@ -1112,9 +1462,9 @@ class $$DevicesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnWithTypeConverterFilters<DeviceKind, DeviceKind, String> get kind =>
+  ColumnWithTypeConverterFilters<DeviceRole, DeviceRole, String> get role =>
       $composableBuilder(
-        column: $table.kind,
+        column: $table.role,
         builder: (column) => ColumnWithTypeConverterFilters(column),
       );
 
@@ -1173,8 +1523,8 @@ class $$DevicesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get kind => $composableBuilder(
-    column: $table.kind,
+  ColumnOrderings<String> get role => $composableBuilder(
+    column: $table.role,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -1229,8 +1579,8 @@ class $$DevicesTableAnnotationComposer
   GeneratedColumn<int> get roomId =>
       $composableBuilder(column: $table.roomId, builder: (column) => column);
 
-  GeneratedColumnWithTypeConverter<DeviceKind, String> get kind =>
-      $composableBuilder(column: $table.kind, builder: (column) => column);
+  GeneratedColumnWithTypeConverter<DeviceRole, String> get role =>
+      $composableBuilder(column: $table.role, builder: (column) => column);
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -1286,7 +1636,7 @@ class $$DevicesTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<int> roomId = const Value.absent(),
-                Value<DeviceKind> kind = const Value.absent(),
+                Value<DeviceRole> role = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> scheme = const Value.absent(),
                 Value<String> host = const Value.absent(),
@@ -1297,7 +1647,7 @@ class $$DevicesTableTableManager
               }) => DevicesCompanion(
                 id: id,
                 roomId: roomId,
-                kind: kind,
+                role: role,
                 name: name,
                 scheme: scheme,
                 host: host,
@@ -1310,7 +1660,7 @@ class $$DevicesTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required int roomId,
-                Value<DeviceKind> kind = const Value.absent(),
+                required DeviceRole role,
                 required String name,
                 Value<String> scheme = const Value.absent(),
                 required String host,
@@ -1321,7 +1671,7 @@ class $$DevicesTableTableManager
               }) => DevicesCompanion.insert(
                 id: id,
                 roomId: roomId,
-                kind: kind,
+                role: role,
                 name: name,
                 scheme: scheme,
                 host: host,
@@ -1361,6 +1711,210 @@ typedef $$DevicesTableProcessedTableManager =
       Device,
       PrefetchHooks Function()
     >;
+typedef $$DeviceWidgetsTableCreateCompanionBuilder =
+    DeviceWidgetsCompanion Function({
+      Value<int> id,
+      required int deviceId,
+      required WidgetKind kind,
+      Value<int> position,
+      Value<String> config,
+    });
+typedef $$DeviceWidgetsTableUpdateCompanionBuilder =
+    DeviceWidgetsCompanion Function({
+      Value<int> id,
+      Value<int> deviceId,
+      Value<WidgetKind> kind,
+      Value<int> position,
+      Value<String> config,
+    });
+
+class $$DeviceWidgetsTableFilterComposer
+    extends Composer<_$AppDatabase, $DeviceWidgetsTable> {
+  $$DeviceWidgetsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<WidgetKind, WidgetKind, String> get kind =>
+      $composableBuilder(
+        column: $table.kind,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get config => $composableBuilder(
+    column: $table.config,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DeviceWidgetsTableOrderingComposer
+    extends Composer<_$AppDatabase, $DeviceWidgetsTable> {
+  $$DeviceWidgetsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get config => $composableBuilder(
+    column: $table.config,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DeviceWidgetsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DeviceWidgetsTable> {
+  $$DeviceWidgetsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<WidgetKind, String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<String> get config =>
+      $composableBuilder(column: $table.config, builder: (column) => column);
+}
+
+class $$DeviceWidgetsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DeviceWidgetsTable,
+          DeviceWidget,
+          $$DeviceWidgetsTableFilterComposer,
+          $$DeviceWidgetsTableOrderingComposer,
+          $$DeviceWidgetsTableAnnotationComposer,
+          $$DeviceWidgetsTableCreateCompanionBuilder,
+          $$DeviceWidgetsTableUpdateCompanionBuilder,
+          (
+            DeviceWidget,
+            BaseReferences<_$AppDatabase, $DeviceWidgetsTable, DeviceWidget>,
+          ),
+          DeviceWidget,
+          PrefetchHooks Function()
+        > {
+  $$DeviceWidgetsTableTableManager(_$AppDatabase db, $DeviceWidgetsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DeviceWidgetsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DeviceWidgetsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DeviceWidgetsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> deviceId = const Value.absent(),
+                Value<WidgetKind> kind = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<String> config = const Value.absent(),
+              }) => DeviceWidgetsCompanion(
+                id: id,
+                deviceId: deviceId,
+                kind: kind,
+                position: position,
+                config: config,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int deviceId,
+                required WidgetKind kind,
+                Value<int> position = const Value.absent(),
+                Value<String> config = const Value.absent(),
+              }) => DeviceWidgetsCompanion.insert(
+                id: id,
+                deviceId: deviceId,
+                kind: kind,
+                position: position,
+                config: config,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$DeviceWidgetsTable, DeviceWidget>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $DeviceWidgetsTable,
+                    DeviceWidget
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DeviceWidgetsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DeviceWidgetsTable,
+      DeviceWidget,
+      $$DeviceWidgetsTableFilterComposer,
+      $$DeviceWidgetsTableOrderingComposer,
+      $$DeviceWidgetsTableAnnotationComposer,
+      $$DeviceWidgetsTableCreateCompanionBuilder,
+      $$DeviceWidgetsTableUpdateCompanionBuilder,
+      (
+        DeviceWidget,
+        BaseReferences<_$AppDatabase, $DeviceWidgetsTable, DeviceWidget>,
+      ),
+      DeviceWidget,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1369,4 +1923,6 @@ class $AppDatabaseManager {
       $$RoomsTableTableManager(_db, _db.rooms);
   $$DevicesTableTableManager get devices =>
       $$DevicesTableTableManager(_db, _db.devices);
+  $$DeviceWidgetsTableTableManager get deviceWidgets =>
+      $$DeviceWidgetsTableTableManager(_db, _db.deviceWidgets);
 }

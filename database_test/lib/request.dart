@@ -64,16 +64,3 @@ Future<({String code, String body})> fetchResponse(
     client.close();
   }
 }
-
-// Sends the device's request and returns the response as displayable text
-Future<String> sendRequest(Device device) async {
-  try {
-    final response = await fetchResponse(device);
-    if (_usesHttp(device)) return 'Status: ${response.code}\n${response.body}';
-    return response.body.isNotEmpty
-        ? response.body
-        : 'Empty response (Code: ${response.code})';
-  } catch (e) {
-    return 'Error: $e';
-  }
-}
