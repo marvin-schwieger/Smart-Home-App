@@ -25,6 +25,22 @@ const _v3 = [
   'PRAGMA user_version = 3',
 ];
 
+// Devices as they were in v4, before the authentication
+const _v4 = [
+  _roomsTable,
+  "CREATE TABLE devices (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
+      "room_id INTEGER NOT NULL, role TEXT NOT NULL, name TEXT NOT NULL, "
+      "scheme TEXT NOT NULL DEFAULT 'coap', host TEXT NOT NULL, "
+      "path TEXT NOT NULL DEFAULT '/', method TEXT NOT NULL DEFAULT 'GET', "
+      "payload TEXT NOT NULL DEFAULT '', poll_seconds INTEGER NULL)",
+  'CREATE TABLE device_widgets (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, '
+      'device_id INTEGER NOT NULL, kind TEXT NOT NULL, '
+      'position INTEGER NOT NULL DEFAULT 0, config TEXT NOT NULL DEFAULT \'{}\')',
+  "INSERT INTO rooms (name) VALUES ('Office')",
+  "INSERT INTO devices (room_id, role, name, host) VALUES (1, 'sensor', 'Thermo', '10.0.0.2')",
+  'PRAGMA user_version = 4',
+];
+
 // Devices as they were in v1, before kinds and polling
 const _v1 = [
   _roomsTable,
@@ -77,6 +93,19 @@ void main() {
     // New widgets go after the migrated ones
     await db.addWidget(1, WidgetKind.gauge, '{}');
     expect((await kinds(1)).last, WidgetKind.gauge);
+  });
+
+  test('v4 devices start without authentication', () async {
+    final db = _openWith(_v4);
+    addTearDown(db.close);
+
+    final device = await db.select(db.devices).getSingle();
+    expect((device.name, device.auth), ('Thermo', '{}'));
+    expect(await db.select(db.oscoreSequences).get(), isEmpty);
+    // v6: accounts and settings of the menu
+    expect(await db.select(db.accounts).get(), isEmpty);
+    await db.setSetting('themeMode', 'dark');
+    expect(await db.setting('themeMode'), 'dark');
   });
 
   test('v1 devices become actuators with a send button', () async {

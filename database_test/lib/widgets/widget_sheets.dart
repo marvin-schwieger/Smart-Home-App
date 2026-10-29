@@ -217,7 +217,7 @@ class _WidgetConfigSheetState extends State<_WidgetConfigSheet> {
           widget.session.isSensor
               ? 'Fields of the response are suggested here after the first reading'
               : 'Fields of the payload are suggested here',
-          style: const TextStyle(fontSize: 12, color: subtitleColor),
+          style: TextStyle(fontSize: 12, color: context.design.muted),
         ),
       );
     }

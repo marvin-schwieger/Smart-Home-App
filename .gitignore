@@ -7,3 +7,8 @@ __pycache__/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Simulator state: the OSCORE contexts device_simulator.py writes, with the
+# sequence numbers aiocoap keeps there, and the generated test certificates
+credentials/oscore/
+credentials/tls/

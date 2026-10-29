@@ -1,0 +1,206 @@
+import 'package:flutter/material.dart';
+
+import 'app_design.dart';
+
+// Ready-made designs to start from on the settings page. A new design is a
+// new entry in [designPresets]: copy one, give it its own id and change the
+// values - the settings page lists it automatically. Stored by id, so
+// existing ids must not be renamed
+class DesignPreset {
+  final String id;
+  final String name;
+  final String description;
+
+  // Seed of the Material color scheme: buttons, switches, picked choices
+  final Color accent;
+
+  final AppDesign light;
+  final AppDesign dark;
+
+  const DesignPreset({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.accent,
+    required this.light,
+    required this.dark,
+  });
+}
+
+// The first one is the default
+const List<DesignPreset> designPresets = [
+  DesignPreset(
+    id: 'warm',
+    name: 'Warm',
+    description: 'Sand tones, soft corners',
+    accent: Color(0xFF4F5DF5),
+    light: AppDesign.warmLight,
+    dark: AppDesign.warmDark,
+  ),
+  DesignPreset(
+    id: 'clean',
+    name: 'Clean',
+    description: 'Cool greys, tight corners',
+    accent: Color(0xFF2563EB),
+    light: AppDesign(
+      background: Color(0xFFF5F7FA),
+      card: Color(0xFFFFFFFF),
+      sheet: Color(0xFFFFFFFF),
+      field: Color(0xFFEDF1F6),
+      highlight: Color(0xFFE3ECFD),
+      muted: Color(0xFF64748B),
+      icon: Color(0xFF475569),
+      faint: Color(0xFFCBD5E1),
+      outline: Color(0xFFE2E8F0),
+      error: Color(0xFFDC2626),
+      cardRadius: 10,
+      sheetRadius: 16,
+      fieldRadius: 8,
+      buttonRadius: 8,
+      badgeRadius: 6,
+      borderWidth: 0,
+      buttonHeight: 48,
+      choiceHeight: 40,
+      tileHeight: 60,
+      spacing: 14,
+      padding: 14,
+      iconSize: 20,
+    ),
+    dark: AppDesign(
+      background: Color(0xFF0F1115),
+      card: Color(0xFF181B22),
+      sheet: Color(0xFF181B22),
+      field: Color(0xFF232833),
+      highlight: Color(0xFF1E2F55),
+      muted: Color(0xFF94A3B8),
+      icon: Color(0xFFCBD5E1),
+      faint: Color(0xFF475569),
+      outline: Color(0xFF2B313D),
+      error: Color(0xFFF87171),
+      cardRadius: 10,
+      sheetRadius: 16,
+      fieldRadius: 8,
+      buttonRadius: 8,
+      badgeRadius: 6,
+      borderWidth: 0,
+      buttonHeight: 48,
+      choiceHeight: 40,
+      tileHeight: 60,
+      spacing: 14,
+      padding: 14,
+      iconSize: 20,
+    ),
+  ),
+  DesignPreset(
+    id: 'soft',
+    name: 'Soft',
+    description: 'Mint, round and roomy',
+    accent: Color(0xFF0F9D7A),
+    light: AppDesign(
+      background: Color(0xFFEEF6F2),
+      card: Color(0xFFFFFFFF),
+      sheet: Color(0xFFFAFDFB),
+      field: Color(0xFFE0EEE7),
+      highlight: Color(0xFFD3F0E5),
+      muted: Color(0xFF4F7A68),
+      icon: Color(0xFF3D5A4D),
+      faint: Color(0xFFB3CCC0),
+      outline: Color(0xFFCFE3D9),
+      error: Color(0xFFC62828),
+      cardRadius: 26,
+      sheetRadius: 32,
+      fieldRadius: 20,
+      buttonRadius: 28,
+      badgeRadius: 12,
+      borderWidth: 0,
+      buttonHeight: 56,
+      choiceHeight: 48,
+      tileHeight: 68,
+      spacing: 18,
+      padding: 18,
+      iconSize: 22,
+    ),
+    dark: AppDesign(
+      background: Color(0xFF0F1A16),
+      card: Color(0xFF17241F),
+      sheet: Color(0xFF14201B),
+      field: Color(0xFF22332C),
+      highlight: Color(0xFF1B4A3B),
+      muted: Color(0xFF8FC2AC),
+      icon: Color(0xFFC8E6D8),
+      faint: Color(0xFF3F5A4E),
+      outline: Color(0xFF2A3D35),
+      error: Color(0xFFEF9A9A),
+      cardRadius: 26,
+      sheetRadius: 32,
+      fieldRadius: 20,
+      buttonRadius: 28,
+      badgeRadius: 12,
+      borderWidth: 0,
+      buttonHeight: 56,
+      choiceHeight: 48,
+      tileHeight: 68,
+      spacing: 18,
+      padding: 18,
+      iconSize: 22,
+    ),
+  ),
+  DesignPreset(
+    id: 'outline',
+    name: 'Outline',
+    description: 'White with thin borders',
+    accent: Color(0xFF7C3AED),
+    light: AppDesign(
+      background: Color(0xFFFFFFFF),
+      card: Color(0xFFFFFFFF),
+      sheet: Color(0xFFFFFFFF),
+      field: Color(0xFFF8F8FA),
+      highlight: Color(0xFFF1EAFE),
+      muted: Color(0xFF6B6B76),
+      icon: Color(0xFF55555F),
+      faint: Color(0xFFC4C4CC),
+      outline: Color(0xFFDADAE0),
+      error: Color(0xFFD92D20),
+      cardRadius: 12,
+      sheetRadius: 20,
+      fieldRadius: 10,
+      buttonRadius: 10,
+      badgeRadius: 6,
+      borderWidth: 1,
+      buttonHeight: 50,
+      choiceHeight: 42,
+      tileHeight: 62,
+      spacing: 16,
+      padding: 16,
+      iconSize: 20,
+    ),
+    dark: AppDesign(
+      background: Color(0xFF0C0C0F),
+      card: Color(0xFF0C0C0F),
+      sheet: Color(0xFF141418),
+      field: Color(0xFF17171C),
+      highlight: Color(0xFF2E1F57),
+      muted: Color(0xFFA1A1AA),
+      icon: Color(0xFFD4D4D8),
+      faint: Color(0xFF52525B),
+      outline: Color(0xFF2F2F37),
+      error: Color(0xFFF97066),
+      cardRadius: 12,
+      sheetRadius: 20,
+      fieldRadius: 10,
+      buttonRadius: 10,
+      badgeRadius: 6,
+      borderWidth: 1,
+      buttonHeight: 50,
+      choiceHeight: 42,
+      tileHeight: 62,
+      spacing: 16,
+      padding: 16,
+      iconSize: 20,
+    ),
+  ),
+];
+
+// The preset with [id], the default one for an unknown id
+DesignPreset designPreset(String id) =>
+    designPresets.firstWhere((p) => p.id == id, orElse: () => designPresets.first);

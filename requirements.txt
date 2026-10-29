@@ -1,6 +1,11 @@
-aiocoap
+aiocoap[oscore]
+# DTLS server of device_simulator.py, optional: builds DTLSSocket, which
+# needs `sudo apt install autoconf automake build-essential python3-dev`
+# aiocoap[tinydtls]
 asyncio
 uvicorn
 fastapi
 logging
 datetime
+# make_test_certs.py
+cryptography

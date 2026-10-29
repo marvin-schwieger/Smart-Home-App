@@ -77,8 +77,8 @@ class _SliderControlState extends State<SliderControl> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(format(low), style: const TextStyle(fontSize: 12, color: subtitleColor)),
-            Text(format(high), style: const TextStyle(fontSize: 12, color: subtitleColor)),
+            Text(format(low), style: TextStyle(fontSize: 12, color: context.design.muted)),
+            Text(format(high), style: TextStyle(fontSize: 12, color: context.design.muted)),
           ],
         ),
       ],

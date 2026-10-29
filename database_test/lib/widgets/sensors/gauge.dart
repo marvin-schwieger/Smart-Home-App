@@ -37,8 +37,9 @@ class SensorGauge extends StatelessWidget {
             painter: _GaugePainter(
               fraction: fraction,
               color: session.lastFailed
-                  ? errorColor
+                  ? context.design.error
                   : Theme.of(context).colorScheme.primary,
+              track: context.design.field,
             ),
             child: Align(
               alignment: Alignment.bottomCenter,
@@ -53,8 +54,8 @@ class SensorGauge extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(format(low), style: const TextStyle(fontSize: 12, color: subtitleColor)),
-            Text(format(high), style: const TextStyle(fontSize: 12, color: subtitleColor)),
+            Text(format(low), style: TextStyle(fontSize: 12, color: context.design.muted)),
+            Text(format(high), style: TextStyle(fontSize: 12, color: context.design.muted)),
           ],
         ),
       ],
@@ -69,7 +70,10 @@ class _GaugePainter extends CustomPainter {
   final double fraction;
   final Color color;
 
-  _GaugePainter({required this.fraction, required this.color});
+  // The part of the arc above the value
+  final Color track;
+
+  _GaugePainter({required this.fraction, required this.color, required this.track});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -86,11 +90,13 @@ class _GaugePainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     // From the left through the top to the right
-    canvas.drawArc(rect, pi, pi, false, arc(fieldColor));
+    canvas.drawArc(rect, pi, pi, false, arc(track));
     if (fraction > 0) canvas.drawArc(rect, pi, pi * fraction, false, arc(color));
   }
 
   @override
   bool shouldRepaint(covariant _GaugePainter oldDelegate) =>
-      oldDelegate.fraction != fraction || oldDelegate.color != color;
+      oldDelegate.fraction != fraction ||
+      oldDelegate.color != color ||
+      oldDelegate.track != track;
 }

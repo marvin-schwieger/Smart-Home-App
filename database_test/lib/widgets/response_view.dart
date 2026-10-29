@@ -15,6 +15,7 @@ class ResponseView extends StatelessWidget {
   Widget build(BuildContext context) {
     final device = session.device;
     final response = session.lastResponse;
+    final design = context.design;
     final details = [
       if (session.lastCode case final code?) 'Code $code',
       if (session.lastElapsed case final elapsed?) '${elapsed.inMilliseconds} ms',
@@ -28,8 +29,8 @@ class ResponseView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFFEDEBFF),
-                borderRadius: BorderRadius.circular(6),
+                color: design.highlight,
+                borderRadius: BorderRadius.circular(design.badgeRadius),
               ),
               child: Text(
                 device.method,
@@ -59,7 +60,7 @@ class ResponseView extends StatelessWidget {
             session.isSensor
                 ? 'Waiting for the first response...'
                 : 'Nothing sent yet - use a control above',
-            style: const TextStyle(fontSize: 13, color: subtitleColor),
+            style: TextStyle(fontSize: 13, color: design.muted),
           )
         else ...[
           CodeBox(response),
@@ -69,7 +70,7 @@ class ResponseView extends StatelessWidget {
               details,
               style: TextStyle(
                 fontSize: 12,
-                color: session.lastFailed ? errorColor : subtitleColor,
+                color: session.lastFailed ? design.error : design.muted,
               ),
             ),
           ],

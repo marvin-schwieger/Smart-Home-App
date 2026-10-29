@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
-// Building blocks shared by the sheets, the device page and its widgets
+import 'design/app_design.dart';
 
-const Color fieldColor = Color(0xFFEDE9E3);
-const Color subtitleColor = Color(0xFF8D6E4A);
-const Color errorColor = Color(0xFFC62828);
+export 'design/app_design.dart' show DesignOf;
+
+// Building blocks shared by the pages, the sheets and the device widgets.
+// Their colors, corners and sizes come from context.design (see
+// design/app_design.dart), never from fixed values
 
 // Frame of a bottom sheet: title, subtitle and the form below it
 class SheetBody extends StatelessWidget {
@@ -21,13 +23,15 @@ class SheetBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final design = context.design;
+    final side = design.padding + 4;
     return SingleChildScrollView(
       // The bottom inset keeps the form above the on-screen keyboard.
       padding: EdgeInsets.fromLTRB(
-        20,
+        side,
         0,
-        20,
-        20 + MediaQuery.viewInsetsOf(context).bottom,
+        side,
+        side + MediaQuery.viewInsetsOf(context).bottom,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -35,8 +39,8 @@ class SheetBody extends StatelessWidget {
         children: [
           Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(fontSize: 13, color: subtitleColor)),
-          const SizedBox(height: 20),
+          Text(subtitle, style: TextStyle(fontSize: 13, color: design.muted)),
+          SizedBox(height: design.spacing + 4),
           ...children,
         ],
       ),
@@ -54,7 +58,7 @@ class GroupLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text.toUpperCase(),
-      style: const TextStyle(fontSize: 12, letterSpacing: 1.2, color: subtitleColor),
+      style: TextStyle(fontSize: 12, letterSpacing: 1.2, color: context.design.muted),
     );
   }
 }
@@ -69,7 +73,163 @@ class FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Text(text, style: const TextStyle(fontSize: 13, color: subtitleColor)),
+      child: Text(text, style: TextStyle(fontSize: 13, color: context.design.muted)),
+    );
+  }
+}
+
+// Surface of a card on a page: rooms, devices, widgets, sections. Tappable
+// if [onTap] or [onLongPress] is given
+class DesignCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+
+  const DesignCard({
+    super.key,
+    required this.child,
+    this.padding,
+    this.onTap,
+    this.onLongPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final design = context.design;
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(design.cardRadius),
+      side: design.border,
+    );
+    final content = Padding(padding: padding ?? EdgeInsets.all(design.padding), child: child);
+    return Material(
+      color: design.card,
+      shape: shape,
+      clipBehavior: Clip.antiAlias,
+      child: onTap == null && onLongPress == null
+          ? content
+          : InkWell(onTap: onTap, onLongPress: onLongPress, customBorder: shape, child: content),
+    );
+  }
+}
+
+// Heading and a card below it, e.g. the groups of the settings page
+class SectionCard extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const SectionCard({super.key, required this.title, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final design = context.design;
+    return Padding(
+      padding: EdgeInsets.only(bottom: design.spacing + 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GroupLabel(title),
+          const SizedBox(height: 8),
+          DesignCard(
+            padding: EdgeInsets.all(design.padding * 0.75),
+            child: SizedBox(
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: children,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Icon in a small rounded box, e.g. in the picker tiles. [accent] tints it
+// with the accent color, [selected] fills it
+class IconBox extends StatelessWidget {
+  final IconData icon;
+  final bool accent;
+  final bool selected;
+
+  const IconBox(this.icon, {super.key, this.accent = false, this.selected = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final design = context.design;
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: selected
+            ? scheme.primary
+            : accent
+                ? design.highlight
+                : design.field,
+        borderRadius: BorderRadius.circular(design.badgeRadius),
+      ),
+      child: Icon(
+        icon,
+        size: design.iconSize,
+        color: selected
+            ? scheme.onPrimary
+            : accent
+                ? scheme.primary
+                : scheme.onSurface,
+      ),
+    );
+  }
+}
+
+// One option of a list where one is picked, e.g. a method on the
+// authentication page: something in front, name, a line below and a radio
+// mark at the end
+class OptionTile extends StatelessWidget {
+  final Widget leading;
+  final String label;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const OptionTile({
+    super.key,
+    required this.leading,
+    required this.label,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final design = context.design;
+    final primary = Theme.of(context).colorScheme.primary;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(design.fieldRadius),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        child: Row(
+          children: [
+            leading,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text(subtitle, style: TextStyle(fontSize: 12, color: design.muted)),
+                ],
+              ),
+            ),
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              color: selected ? primary : design.faint,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -123,15 +283,21 @@ class ChoiceButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final design = context.design;
+    final scheme = Theme.of(context).colorScheme;
+    final radius = BorderRadius.circular(design.fieldRadius);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: radius,
       child: Container(
-        height: 44,
+        height: design.choiceHeight,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? Theme.of(context).colorScheme.primary : fieldColor,
-          borderRadius: BorderRadius.circular(12),
+          color: selected ? scheme.primary : design.field,
+          borderRadius: radius,
+          border: selected || design.borderWidth == 0
+              ? null
+              : Border.all(color: design.outline, width: design.borderWidth),
         ),
         child: Text(
           label,
@@ -139,7 +305,7 @@ class ChoiceButton extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: selected ? Colors.white : Colors.black54,
+            color: selected ? scheme.onPrimary : design.icon,
           ),
         ),
       ),
@@ -165,25 +331,23 @@ class PickerTile<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final design = context.design;
+    final radius = BorderRadius.circular(design.fieldRadius);
     return InkWell(
       onTap: () => Navigator.pop(context, value),
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: radius,
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          border: Border.all(color: fieldColor, width: 1.5),
-          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: design.borderWidth > 0 ? design.outline : design.field,
+            width: 1.5,
+          ),
+          borderRadius: radius,
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: fieldColor,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 20, color: Colors.black87),
-            ),
+            IconBox(icon),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -200,7 +364,7 @@ class PickerTile<T> extends StatelessWidget {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: subtitleColor),
+                    style: TextStyle(fontSize: 11, color: design.muted),
                   ),
                 ],
               ),
@@ -223,9 +387,9 @@ class PickerGrid extends StatelessWidget {
     return GridView(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        mainAxisExtent: 64,
+        mainAxisExtent: context.design.tileHeight,
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
       ),
@@ -234,6 +398,7 @@ class PickerGrid extends StatelessWidget {
   }
 }
 
+// Large button at the end of a form, e.g. Save
 class SaveButton extends StatelessWidget {
   final bool enabled;
   final String label;
@@ -248,14 +413,15 @@ class SaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final design = context.design;
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: design.buttonHeight,
       child: FilledButton(
         // Stays disabled until the required fields are filled in
         onPressed: enabled ? onPressed : null,
         style: FilledButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(design.buttonRadius)),
         ),
         child: Text(label),
       ),
@@ -263,7 +429,63 @@ class SaveButton extends StatelessWidget {
   }
 }
 
-// Grey box with monospace text, e.g. a payload or a response
+// Large outlined button, e.g. "Add widget"
+class WideOutlinedButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  const WideOutlinedButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final design = context.design;
+    return SizedBox(
+      width: double.infinity,
+      height: design.buttonHeight,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(label),
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(design.buttonRadius)),
+        ),
+      ),
+    );
+  }
+}
+
+// Label and value in one line, e.g. "Email  marvin@example.com"
+class InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const InfoRow(this.label, this.value, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(label, style: TextStyle(fontSize: 13, color: context.design.muted)),
+          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
+        ],
+      ),
+    );
+  }
+}
+
+// Box with monospace text, e.g. a payload or a response
 class CodeBox extends StatelessWidget {
   final String text;
 
@@ -271,12 +493,13 @@ class CodeBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final design = context.design;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: fieldColor,
-        borderRadius: BorderRadius.circular(8),
+        color: design.field,
+        borderRadius: BorderRadius.circular(design.badgeRadius),
       ),
       child: SelectableText(
         text,
@@ -286,16 +509,10 @@ class CodeBox extends StatelessWidget {
   }
 }
 
-InputDecoration fieldDecoration(String label, {String? hint, String? helper}) =>
-    InputDecoration(
+// Fill, corners and borders come from the theme, see buildTheme
+InputDecoration fieldDecoration(String label, {String? hint, String? helper}) => InputDecoration(
       labelText: label,
       hintText: hint,
       helperText: helper,
       helperMaxLines: 2,
-      filled: true,
-      fillColor: fieldColor,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
     );

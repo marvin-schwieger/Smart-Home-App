@@ -5,6 +5,7 @@ import 'database.dart';
 import 'device_page.dart';
 import 'device_presets.dart';
 import 'device_session.dart';
+import 'js_test_page.dart';
 import 'request.dart';
 import 'room_icons.dart';
 import 'sheets.dart';
@@ -129,6 +130,15 @@ class _RoomPageState extends State<RoomPage> {
           ],
         ),
         actions: [
+          // Only for testing if flutter_js runs
+          IconButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const JsTestPage()),
+            ),
+            icon: const Icon(Icons.javascript),
+            tooltip: 'flutter_js test',
+          ),
           IconButton(
             onPressed: _deleteRoom,
             icon: const Icon(Icons.delete_outline),
@@ -137,11 +147,11 @@ class _RoomPageState extends State<RoomPage> {
         ],
       ),
       body: _devices.isEmpty
-          ? const Center(
+          ? Center(
               child: Text(
                 'No devices yet.\nClick + to add one.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: context.design.muted),
               ),
             )
           : ListView.builder(
@@ -192,46 +202,47 @@ class _DeviceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: ListTile(
-        leading: Icon(device.role.icon),
-        title: Text(
-          device.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          buildUri(device.scheme, device.host, device.path).toString(),
-          style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            badge ??
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: fieldColor,
-                    borderRadius: BorderRadius.circular(8),
+    final design = context.design;
+    return Padding(
+      padding: EdgeInsets.only(bottom: design.spacing * 0.75),
+      child: DesignCard(
+        padding: EdgeInsets.zero,
+        child: ListTile(
+          leading: Icon(device.role.icon),
+          title: Text(
+            device.name,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(
+            buildUri(device.scheme, device.host, device.path).toString(),
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              badge ??
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: design.field,
+                      borderRadius: BorderRadius.circular(design.badgeRadius),
+                    ),
+                    child: Text(
+                      device.method,
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  child: Text(
-                    device.method,
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
-                ),
-            // Deleting is only possible here, never by long pressing.
-            IconButton(
-              onPressed: onDelete,
-              icon: const Icon(Icons.delete_outline),
-              tooltip: 'Delete device',
-            ),
-          ],
+              // Deleting is only possible here, never by long pressing.
+              IconButton(
+                onPressed: onDelete,
+                icon: const Icon(Icons.delete_outline),
+                tooltip: 'Delete device',
+              ),
+            ],
+          ),
+          onTap: onTap,
+          onLongPress: onEdit,
         ),
-        onTap: onTap,
-        onLongPress: onEdit,
       ),
     );
   }

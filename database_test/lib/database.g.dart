@@ -398,6 +398,16 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _authMeta = const VerificationMeta('auth');
+  @override
+  late final GeneratedColumn<String> auth = GeneratedColumn<String>(
+    'auth',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -410,6 +420,7 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
     method,
     payload,
     pollSeconds,
+    auth,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -483,6 +494,12 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
         ),
       );
     }
+    if (data.containsKey('auth')) {
+      context.handle(
+        _authMeta,
+        auth.isAcceptableOrUnknown(data['auth']!, _authMeta),
+      );
+    }
     return context;
   }
 
@@ -534,6 +551,10 @@ class $DevicesTable extends Devices with TableInfo<$DevicesTable, Device> {
         DriftSqlType.int,
         data['${effectivePrefix}poll_seconds'],
       ),
+      auth: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}auth'],
+      )!,
     );
   }
 
@@ -557,6 +578,7 @@ class Device extends DataClass implements Insertable<Device> {
   final String method;
   final String payload;
   final int? pollSeconds;
+  final String auth;
   const Device({
     required this.id,
     required this.roomId,
@@ -568,6 +590,7 @@ class Device extends DataClass implements Insertable<Device> {
     required this.method,
     required this.payload,
     this.pollSeconds,
+    required this.auth,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -586,6 +609,7 @@ class Device extends DataClass implements Insertable<Device> {
     if (!nullToAbsent || pollSeconds != null) {
       map['poll_seconds'] = Variable<int>(pollSeconds);
     }
+    map['auth'] = Variable<String>(auth);
     return map;
   }
 
@@ -603,6 +627,7 @@ class Device extends DataClass implements Insertable<Device> {
       pollSeconds: pollSeconds == null && nullToAbsent
           ? const Value.absent()
           : Value(pollSeconds),
+      auth: Value(auth),
     );
   }
 
@@ -624,6 +649,7 @@ class Device extends DataClass implements Insertable<Device> {
       method: serializer.fromJson<String>(json['method']),
       payload: serializer.fromJson<String>(json['payload']),
       pollSeconds: serializer.fromJson<int?>(json['pollSeconds']),
+      auth: serializer.fromJson<String>(json['auth']),
     );
   }
   @override
@@ -642,6 +668,7 @@ class Device extends DataClass implements Insertable<Device> {
       'method': serializer.toJson<String>(method),
       'payload': serializer.toJson<String>(payload),
       'pollSeconds': serializer.toJson<int?>(pollSeconds),
+      'auth': serializer.toJson<String>(auth),
     };
   }
 
@@ -656,6 +683,7 @@ class Device extends DataClass implements Insertable<Device> {
     String? method,
     String? payload,
     Value<int?> pollSeconds = const Value.absent(),
+    String? auth,
   }) => Device(
     id: id ?? this.id,
     roomId: roomId ?? this.roomId,
@@ -667,6 +695,7 @@ class Device extends DataClass implements Insertable<Device> {
     method: method ?? this.method,
     payload: payload ?? this.payload,
     pollSeconds: pollSeconds.present ? pollSeconds.value : this.pollSeconds,
+    auth: auth ?? this.auth,
   );
   Device copyWithCompanion(DevicesCompanion data) {
     return Device(
@@ -682,6 +711,7 @@ class Device extends DataClass implements Insertable<Device> {
       pollSeconds: data.pollSeconds.present
           ? data.pollSeconds.value
           : this.pollSeconds,
+      auth: data.auth.present ? data.auth.value : this.auth,
     );
   }
 
@@ -697,7 +727,8 @@ class Device extends DataClass implements Insertable<Device> {
           ..write('path: $path, ')
           ..write('method: $method, ')
           ..write('payload: $payload, ')
-          ..write('pollSeconds: $pollSeconds')
+          ..write('pollSeconds: $pollSeconds, ')
+          ..write('auth: $auth')
           ..write(')'))
         .toString();
   }
@@ -714,6 +745,7 @@ class Device extends DataClass implements Insertable<Device> {
     method,
     payload,
     pollSeconds,
+    auth,
   );
   @override
   bool operator ==(Object other) =>
@@ -728,7 +760,8 @@ class Device extends DataClass implements Insertable<Device> {
           other.path == this.path &&
           other.method == this.method &&
           other.payload == this.payload &&
-          other.pollSeconds == this.pollSeconds);
+          other.pollSeconds == this.pollSeconds &&
+          other.auth == this.auth);
 }
 
 class DevicesCompanion extends UpdateCompanion<Device> {
@@ -742,6 +775,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
   final Value<String> method;
   final Value<String> payload;
   final Value<int?> pollSeconds;
+  final Value<String> auth;
   const DevicesCompanion({
     this.id = const Value.absent(),
     this.roomId = const Value.absent(),
@@ -753,6 +787,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     this.method = const Value.absent(),
     this.payload = const Value.absent(),
     this.pollSeconds = const Value.absent(),
+    this.auth = const Value.absent(),
   });
   DevicesCompanion.insert({
     this.id = const Value.absent(),
@@ -765,6 +800,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     this.method = const Value.absent(),
     this.payload = const Value.absent(),
     this.pollSeconds = const Value.absent(),
+    this.auth = const Value.absent(),
   }) : roomId = Value(roomId),
        role = Value(role),
        name = Value(name),
@@ -780,6 +816,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     Expression<String>? method,
     Expression<String>? payload,
     Expression<int>? pollSeconds,
+    Expression<String>? auth,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -792,6 +829,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
       if (method != null) 'method': method,
       if (payload != null) 'payload': payload,
       if (pollSeconds != null) 'poll_seconds': pollSeconds,
+      if (auth != null) 'auth': auth,
     });
   }
 
@@ -806,6 +844,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     Value<String>? method,
     Value<String>? payload,
     Value<int?>? pollSeconds,
+    Value<String>? auth,
   }) {
     return DevicesCompanion(
       id: id ?? this.id,
@@ -818,6 +857,7 @@ class DevicesCompanion extends UpdateCompanion<Device> {
       method: method ?? this.method,
       payload: payload ?? this.payload,
       pollSeconds: pollSeconds ?? this.pollSeconds,
+      auth: auth ?? this.auth,
     );
   }
 
@@ -856,6 +896,9 @@ class DevicesCompanion extends UpdateCompanion<Device> {
     if (pollSeconds.present) {
       map['poll_seconds'] = Variable<int>(pollSeconds.value);
     }
+    if (auth.present) {
+      map['auth'] = Variable<String>(auth.value);
+    }
     return map;
   }
 
@@ -871,7 +914,8 @@ class DevicesCompanion extends UpdateCompanion<Device> {
           ..write('path: $path, ')
           ..write('method: $method, ')
           ..write('payload: $payload, ')
-          ..write('pollSeconds: $pollSeconds')
+          ..write('pollSeconds: $pollSeconds, ')
+          ..write('auth: $auth')
           ..write(')'))
         .toString();
   }
@@ -1222,12 +1266,887 @@ class DeviceWidgetsCompanion extends UpdateCompanion<DeviceWidget> {
   }
 }
 
+class $OscoreSequencesTable extends OscoreSequences
+    with TableInfo<$OscoreSequencesTable, OscoreSequence> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $OscoreSequencesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _contextMeta = const VerificationMeta(
+    'context',
+  );
+  @override
+  late final GeneratedColumn<String> context = GeneratedColumn<String>(
+    'context',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _reservedMeta = const VerificationMeta(
+    'reserved',
+  );
+  @override
+  late final GeneratedColumn<int> reserved = GeneratedColumn<int>(
+    'reserved',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [context, reserved];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'oscore_sequences';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<OscoreSequence> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('context')) {
+      context.handle(
+        _contextMeta,
+        this.context.isAcceptableOrUnknown(data['context']!, _contextMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contextMeta);
+    }
+    if (data.containsKey('reserved')) {
+      context.handle(
+        _reservedMeta,
+        reserved.isAcceptableOrUnknown(data['reserved']!, _reservedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reservedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {context};
+  @override
+  OscoreSequence map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OscoreSequence(
+      context: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}context'],
+      )!,
+      reserved: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reserved'],
+      )!,
+    );
+  }
+
+  @override
+  $OscoreSequencesTable createAlias(String alias) {
+    return $OscoreSequencesTable(attachedDatabase, alias);
+  }
+}
+
+class OscoreSequence extends DataClass implements Insertable<OscoreSequence> {
+  final String context;
+  final int reserved;
+  const OscoreSequence({required this.context, required this.reserved});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['context'] = Variable<String>(context);
+    map['reserved'] = Variable<int>(reserved);
+    return map;
+  }
+
+  OscoreSequencesCompanion toCompanion(bool nullToAbsent) {
+    return OscoreSequencesCompanion(
+      context: Value(context),
+      reserved: Value(reserved),
+    );
+  }
+
+  factory OscoreSequence.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OscoreSequence(
+      context: serializer.fromJson<String>(json['context']),
+      reserved: serializer.fromJson<int>(json['reserved']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'context': serializer.toJson<String>(context),
+      'reserved': serializer.toJson<int>(reserved),
+    };
+  }
+
+  OscoreSequence copyWith({String? context, int? reserved}) => OscoreSequence(
+    context: context ?? this.context,
+    reserved: reserved ?? this.reserved,
+  );
+  OscoreSequence copyWithCompanion(OscoreSequencesCompanion data) {
+    return OscoreSequence(
+      context: data.context.present ? data.context.value : this.context,
+      reserved: data.reserved.present ? data.reserved.value : this.reserved,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OscoreSequence(')
+          ..write('context: $context, ')
+          ..write('reserved: $reserved')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(context, reserved);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OscoreSequence &&
+          other.context == this.context &&
+          other.reserved == this.reserved);
+}
+
+class OscoreSequencesCompanion extends UpdateCompanion<OscoreSequence> {
+  final Value<String> context;
+  final Value<int> reserved;
+  final Value<int> rowid;
+  const OscoreSequencesCompanion({
+    this.context = const Value.absent(),
+    this.reserved = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  OscoreSequencesCompanion.insert({
+    required String context,
+    required int reserved,
+    this.rowid = const Value.absent(),
+  }) : context = Value(context),
+       reserved = Value(reserved);
+  static Insertable<OscoreSequence> custom({
+    Expression<String>? context,
+    Expression<int>? reserved,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (context != null) 'context': context,
+      if (reserved != null) 'reserved': reserved,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  OscoreSequencesCompanion copyWith({
+    Value<String>? context,
+    Value<int>? reserved,
+    Value<int>? rowid,
+  }) {
+    return OscoreSequencesCompanion(
+      context: context ?? this.context,
+      reserved: reserved ?? this.reserved,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (context.present) {
+      map['context'] = Variable<String>(context.value);
+    }
+    if (reserved.present) {
+      map['reserved'] = Variable<int>(reserved.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OscoreSequencesCompanion(')
+          ..write('context: $context, ')
+          ..write('reserved: $reserved, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AccountsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _emailMeta = const VerificationMeta('email');
+  @override
+  late final GeneratedColumn<String> email = GeneratedColumn<String>(
+    'email',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _passwordHashMeta = const VerificationMeta(
+    'passwordHash',
+  );
+  @override
+  late final GeneratedColumn<String> passwordHash = GeneratedColumn<String>(
+    'password_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _saltMeta = const VerificationMeta('salt');
+  @override
+  late final GeneratedColumn<String> salt = GeneratedColumn<String>(
+    'salt',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _iterationsMeta = const VerificationMeta(
+    'iterations',
+  );
+  @override
+  late final GeneratedColumn<int> iterations = GeneratedColumn<int>(
+    'iterations',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    email,
+    passwordHash,
+    salt,
+    iterations,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'accounts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Account> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('email')) {
+      context.handle(
+        _emailMeta,
+        email.isAcceptableOrUnknown(data['email']!, _emailMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_emailMeta);
+    }
+    if (data.containsKey('password_hash')) {
+      context.handle(
+        _passwordHashMeta,
+        passwordHash.isAcceptableOrUnknown(
+          data['password_hash']!,
+          _passwordHashMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_passwordHashMeta);
+    }
+    if (data.containsKey('salt')) {
+      context.handle(
+        _saltMeta,
+        salt.isAcceptableOrUnknown(data['salt']!, _saltMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_saltMeta);
+    }
+    if (data.containsKey('iterations')) {
+      context.handle(
+        _iterationsMeta,
+        iterations.isAcceptableOrUnknown(data['iterations']!, _iterationsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_iterationsMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Account map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Account(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      email: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}email'],
+      )!,
+      passwordHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}password_hash'],
+      )!,
+      salt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}salt'],
+      )!,
+      iterations: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}iterations'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AccountsTable createAlias(String alias) {
+    return $AccountsTable(attachedDatabase, alias);
+  }
+}
+
+class Account extends DataClass implements Insertable<Account> {
+  final int id;
+  final String name;
+  final String email;
+  final String passwordHash;
+  final String salt;
+  final int iterations;
+  final DateTime createdAt;
+  const Account({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.passwordHash,
+    required this.salt,
+    required this.iterations,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['email'] = Variable<String>(email);
+    map['password_hash'] = Variable<String>(passwordHash);
+    map['salt'] = Variable<String>(salt);
+    map['iterations'] = Variable<int>(iterations);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  AccountsCompanion toCompanion(bool nullToAbsent) {
+    return AccountsCompanion(
+      id: Value(id),
+      name: Value(name),
+      email: Value(email),
+      passwordHash: Value(passwordHash),
+      salt: Value(salt),
+      iterations: Value(iterations),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Account.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Account(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      email: serializer.fromJson<String>(json['email']),
+      passwordHash: serializer.fromJson<String>(json['passwordHash']),
+      salt: serializer.fromJson<String>(json['salt']),
+      iterations: serializer.fromJson<int>(json['iterations']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'email': serializer.toJson<String>(email),
+      'passwordHash': serializer.toJson<String>(passwordHash),
+      'salt': serializer.toJson<String>(salt),
+      'iterations': serializer.toJson<int>(iterations),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  Account copyWith({
+    int? id,
+    String? name,
+    String? email,
+    String? passwordHash,
+    String? salt,
+    int? iterations,
+    DateTime? createdAt,
+  }) => Account(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    email: email ?? this.email,
+    passwordHash: passwordHash ?? this.passwordHash,
+    salt: salt ?? this.salt,
+    iterations: iterations ?? this.iterations,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  Account copyWithCompanion(AccountsCompanion data) {
+    return Account(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      email: data.email.present ? data.email.value : this.email,
+      passwordHash: data.passwordHash.present
+          ? data.passwordHash.value
+          : this.passwordHash,
+      salt: data.salt.present ? data.salt.value : this.salt,
+      iterations: data.iterations.present
+          ? data.iterations.value
+          : this.iterations,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Account(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('email: $email, ')
+          ..write('passwordHash: $passwordHash, ')
+          ..write('salt: $salt, ')
+          ..write('iterations: $iterations, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, email, passwordHash, salt, iterations, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Account &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.email == this.email &&
+          other.passwordHash == this.passwordHash &&
+          other.salt == this.salt &&
+          other.iterations == this.iterations &&
+          other.createdAt == this.createdAt);
+}
+
+class AccountsCompanion extends UpdateCompanion<Account> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String> email;
+  final Value<String> passwordHash;
+  final Value<String> salt;
+  final Value<int> iterations;
+  final Value<DateTime> createdAt;
+  const AccountsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.email = const Value.absent(),
+    this.passwordHash = const Value.absent(),
+    this.salt = const Value.absent(),
+    this.iterations = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  AccountsCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    required String email,
+    required String passwordHash,
+    required String salt,
+    required int iterations,
+    this.createdAt = const Value.absent(),
+  }) : name = Value(name),
+       email = Value(email),
+       passwordHash = Value(passwordHash),
+       salt = Value(salt),
+       iterations = Value(iterations);
+  static Insertable<Account> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? email,
+    Expression<String>? passwordHash,
+    Expression<String>? salt,
+    Expression<int>? iterations,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (email != null) 'email': email,
+      if (passwordHash != null) 'password_hash': passwordHash,
+      if (salt != null) 'salt': salt,
+      if (iterations != null) 'iterations': iterations,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  AccountsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<String>? email,
+    Value<String>? passwordHash,
+    Value<String>? salt,
+    Value<int>? iterations,
+    Value<DateTime>? createdAt,
+  }) {
+    return AccountsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      passwordHash: passwordHash ?? this.passwordHash,
+      salt: salt ?? this.salt,
+      iterations: iterations ?? this.iterations,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (email.present) {
+      map['email'] = Variable<String>(email.value);
+    }
+    if (passwordHash.present) {
+      map['password_hash'] = Variable<String>(passwordHash.value);
+    }
+    if (salt.present) {
+      map['salt'] = Variable<String>(salt.value);
+    }
+    if (iterations.present) {
+      map['iterations'] = Variable<int>(iterations.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AccountsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('email: $email, ')
+          ..write('passwordHash: $passwordHash, ')
+          ..write('salt: $salt, ')
+          ..write('iterations: $iterations, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<String> value = GeneratedColumn<String>(
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [name, value];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'settings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Setting> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {name};
+  @override
+  Setting map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Setting(
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}value'],
+      )!,
+    );
+  }
+
+  @override
+  $SettingsTable createAlias(String alias) {
+    return $SettingsTable(attachedDatabase, alias);
+  }
+}
+
+class Setting extends DataClass implements Insertable<Setting> {
+  final String name;
+  final String value;
+  const Setting({required this.name, required this.value});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['name'] = Variable<String>(name);
+    map['value'] = Variable<String>(value);
+    return map;
+  }
+
+  SettingsCompanion toCompanion(bool nullToAbsent) {
+    return SettingsCompanion(name: Value(name), value: Value(value));
+  }
+
+  factory Setting.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Setting(
+      name: serializer.fromJson<String>(json['name']),
+      value: serializer.fromJson<String>(json['value']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'name': serializer.toJson<String>(name),
+      'value': serializer.toJson<String>(value),
+    };
+  }
+
+  Setting copyWith({String? name, String? value}) =>
+      Setting(name: name ?? this.name, value: value ?? this.value);
+  Setting copyWithCompanion(SettingsCompanion data) {
+    return Setting(
+      name: data.name.present ? data.name.value : this.name,
+      value: data.value.present ? data.value.value : this.value,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Setting(')
+          ..write('name: $name, ')
+          ..write('value: $value')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(name, value);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Setting &&
+          other.name == this.name &&
+          other.value == this.value);
+}
+
+class SettingsCompanion extends UpdateCompanion<Setting> {
+  final Value<String> name;
+  final Value<String> value;
+  final Value<int> rowid;
+  const SettingsCompanion({
+    this.name = const Value.absent(),
+    this.value = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SettingsCompanion.insert({
+    required String name,
+    required String value,
+    this.rowid = const Value.absent(),
+  }) : name = Value(name),
+       value = Value(value);
+  static Insertable<Setting> custom({
+    Expression<String>? name,
+    Expression<String>? value,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (name != null) 'name': name,
+      if (value != null) 'value': value,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SettingsCompanion copyWith({
+    Value<String>? name,
+    Value<String>? value,
+    Value<int>? rowid,
+  }) {
+    return SettingsCompanion(
+      name: name ?? this.name,
+      value: value ?? this.value,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<String>(value.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SettingsCompanion(')
+          ..write('name: $name, ')
+          ..write('value: $value, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $RoomsTable rooms = $RoomsTable(this);
   late final $DevicesTable devices = $DevicesTable(this);
   late final $DeviceWidgetsTable deviceWidgets = $DeviceWidgetsTable(this);
+  late final $OscoreSequencesTable oscoreSequences = $OscoreSequencesTable(
+    this,
+  );
+  late final $AccountsTable accounts = $AccountsTable(this);
+  late final $SettingsTable settings = $SettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1236,6 +2155,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     rooms,
     devices,
     deviceWidgets,
+    oscoreSequences,
+    accounts,
+    settings,
   ];
 }
 
@@ -1428,6 +2350,7 @@ typedef $$DevicesTableCreateCompanionBuilder =
       Value<String> method,
       Value<String> payload,
       Value<int?> pollSeconds,
+      Value<String> auth,
     });
 typedef $$DevicesTableUpdateCompanionBuilder =
     DevicesCompanion Function({
@@ -1441,6 +2364,7 @@ typedef $$DevicesTableUpdateCompanionBuilder =
       Value<String> method,
       Value<String> payload,
       Value<int?> pollSeconds,
+      Value<String> auth,
     });
 
 class $$DevicesTableFilterComposer
@@ -1500,6 +2424,11 @@ class $$DevicesTableFilterComposer
 
   ColumnFilters<int> get pollSeconds => $composableBuilder(
     column: $table.pollSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get auth => $composableBuilder(
+    column: $table.auth,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1562,6 +2491,11 @@ class $$DevicesTableOrderingComposer
     column: $table.pollSeconds,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get auth => $composableBuilder(
+    column: $table.auth,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DevicesTableAnnotationComposer
@@ -1604,6 +2538,9 @@ class $$DevicesTableAnnotationComposer
     column: $table.pollSeconds,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get auth =>
+      $composableBuilder(column: $table.auth, builder: (column) => column);
 }
 
 class $$DevicesTableTableManager
@@ -1644,6 +2581,7 @@ class $$DevicesTableTableManager
                 Value<String> method = const Value.absent(),
                 Value<String> payload = const Value.absent(),
                 Value<int?> pollSeconds = const Value.absent(),
+                Value<String> auth = const Value.absent(),
               }) => DevicesCompanion(
                 id: id,
                 roomId: roomId,
@@ -1655,6 +2593,7 @@ class $$DevicesTableTableManager
                 method: method,
                 payload: payload,
                 pollSeconds: pollSeconds,
+                auth: auth,
               ),
           createCompanionCallback:
               ({
@@ -1668,6 +2607,7 @@ class $$DevicesTableTableManager
                 Value<String> method = const Value.absent(),
                 Value<String> payload = const Value.absent(),
                 Value<int?> pollSeconds = const Value.absent(),
+                Value<String> auth = const Value.absent(),
               }) => DevicesCompanion.insert(
                 id: id,
                 roomId: roomId,
@@ -1679,6 +2619,7 @@ class $$DevicesTableTableManager
                 method: method,
                 payload: payload,
                 pollSeconds: pollSeconds,
+                auth: auth,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -1915,6 +2856,545 @@ typedef $$DeviceWidgetsTableProcessedTableManager =
       DeviceWidget,
       PrefetchHooks Function()
     >;
+typedef $$OscoreSequencesTableCreateCompanionBuilder =
+    OscoreSequencesCompanion Function({
+      required String context,
+      required int reserved,
+      Value<int> rowid,
+    });
+typedef $$OscoreSequencesTableUpdateCompanionBuilder =
+    OscoreSequencesCompanion Function({
+      Value<String> context,
+      Value<int> reserved,
+      Value<int> rowid,
+    });
+
+class $$OscoreSequencesTableFilterComposer
+    extends Composer<_$AppDatabase, $OscoreSequencesTable> {
+  $$OscoreSequencesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get context => $composableBuilder(
+    column: $table.context,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reserved => $composableBuilder(
+    column: $table.reserved,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$OscoreSequencesTableOrderingComposer
+    extends Composer<_$AppDatabase, $OscoreSequencesTable> {
+  $$OscoreSequencesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get context => $composableBuilder(
+    column: $table.context,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reserved => $composableBuilder(
+    column: $table.reserved,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$OscoreSequencesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $OscoreSequencesTable> {
+  $$OscoreSequencesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get context =>
+      $composableBuilder(column: $table.context, builder: (column) => column);
+
+  GeneratedColumn<int> get reserved =>
+      $composableBuilder(column: $table.reserved, builder: (column) => column);
+}
+
+class $$OscoreSequencesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $OscoreSequencesTable,
+          OscoreSequence,
+          $$OscoreSequencesTableFilterComposer,
+          $$OscoreSequencesTableOrderingComposer,
+          $$OscoreSequencesTableAnnotationComposer,
+          $$OscoreSequencesTableCreateCompanionBuilder,
+          $$OscoreSequencesTableUpdateCompanionBuilder,
+          (
+            OscoreSequence,
+            BaseReferences<
+              _$AppDatabase,
+              $OscoreSequencesTable,
+              OscoreSequence
+            >,
+          ),
+          OscoreSequence,
+          PrefetchHooks Function()
+        > {
+  $$OscoreSequencesTableTableManager(
+    _$AppDatabase db,
+    $OscoreSequencesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$OscoreSequencesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$OscoreSequencesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$OscoreSequencesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> context = const Value.absent(),
+                Value<int> reserved = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => OscoreSequencesCompanion(
+                context: context,
+                reserved: reserved,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String context,
+                required int reserved,
+                Value<int> rowid = const Value.absent(),
+              }) => OscoreSequencesCompanion.insert(
+                context: context,
+                reserved: reserved,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$OscoreSequencesTable, OscoreSequence>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $OscoreSequencesTable,
+                    OscoreSequence
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$OscoreSequencesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $OscoreSequencesTable,
+      OscoreSequence,
+      $$OscoreSequencesTableFilterComposer,
+      $$OscoreSequencesTableOrderingComposer,
+      $$OscoreSequencesTableAnnotationComposer,
+      $$OscoreSequencesTableCreateCompanionBuilder,
+      $$OscoreSequencesTableUpdateCompanionBuilder,
+      (
+        OscoreSequence,
+        BaseReferences<_$AppDatabase, $OscoreSequencesTable, OscoreSequence>,
+      ),
+      OscoreSequence,
+      PrefetchHooks Function()
+    >;
+typedef $$AccountsTableCreateCompanionBuilder =
+    AccountsCompanion Function({
+      Value<int> id,
+      required String name,
+      required String email,
+      required String passwordHash,
+      required String salt,
+      required int iterations,
+      Value<DateTime> createdAt,
+    });
+typedef $$AccountsTableUpdateCompanionBuilder =
+    AccountsCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<String> email,
+      Value<String> passwordHash,
+      Value<String> salt,
+      Value<int> iterations,
+      Value<DateTime> createdAt,
+    });
+
+class $$AccountsTableFilterComposer
+    extends Composer<_$AppDatabase, $AccountsTable> {
+  $$AccountsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get email => $composableBuilder(
+    column: $table.email,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get passwordHash => $composableBuilder(
+    column: $table.passwordHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get salt => $composableBuilder(
+    column: $table.salt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get iterations => $composableBuilder(
+    column: $table.iterations,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AccountsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AccountsTable> {
+  $$AccountsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get email => $composableBuilder(
+    column: $table.email,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get passwordHash => $composableBuilder(
+    column: $table.passwordHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get salt => $composableBuilder(
+    column: $table.salt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get iterations => $composableBuilder(
+    column: $table.iterations,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AccountsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AccountsTable> {
+  $$AccountsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get email =>
+      $composableBuilder(column: $table.email, builder: (column) => column);
+
+  GeneratedColumn<String> get passwordHash => $composableBuilder(
+    column: $table.passwordHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get salt =>
+      $composableBuilder(column: $table.salt, builder: (column) => column);
+
+  GeneratedColumn<int> get iterations => $composableBuilder(
+    column: $table.iterations,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$AccountsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AccountsTable,
+          Account,
+          $$AccountsTableFilterComposer,
+          $$AccountsTableOrderingComposer,
+          $$AccountsTableAnnotationComposer,
+          $$AccountsTableCreateCompanionBuilder,
+          $$AccountsTableUpdateCompanionBuilder,
+          (Account, BaseReferences<_$AppDatabase, $AccountsTable, Account>),
+          Account,
+          PrefetchHooks Function()
+        > {
+  $$AccountsTableTableManager(_$AppDatabase db, $AccountsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AccountsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AccountsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AccountsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> email = const Value.absent(),
+                Value<String> passwordHash = const Value.absent(),
+                Value<String> salt = const Value.absent(),
+                Value<int> iterations = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => AccountsCompanion(
+                id: id,
+                name: name,
+                email: email,
+                passwordHash: passwordHash,
+                salt: salt,
+                iterations: iterations,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                required String email,
+                required String passwordHash,
+                required String salt,
+                required int iterations,
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => AccountsCompanion.insert(
+                id: id,
+                name: name,
+                email: email,
+                passwordHash: passwordHash,
+                salt: salt,
+                iterations: iterations,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AccountsTable, Account>(table),
+                  BaseReferences<_$AppDatabase, $AccountsTable, Account>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AccountsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AccountsTable,
+      Account,
+      $$AccountsTableFilterComposer,
+      $$AccountsTableOrderingComposer,
+      $$AccountsTableAnnotationComposer,
+      $$AccountsTableCreateCompanionBuilder,
+      $$AccountsTableUpdateCompanionBuilder,
+      (Account, BaseReferences<_$AppDatabase, $AccountsTable, Account>),
+      Account,
+      PrefetchHooks Function()
+    >;
+typedef $$SettingsTableCreateCompanionBuilder =
+    SettingsCompanion Function({
+      required String name,
+      required String value,
+      Value<int> rowid,
+    });
+typedef $$SettingsTableUpdateCompanionBuilder =
+    SettingsCompanion Function({
+      Value<String> name,
+      Value<String> value,
+      Value<int> rowid,
+    });
+
+class $$SettingsTableFilterComposer
+    extends Composer<_$AppDatabase, $SettingsTable> {
+  $$SettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SettingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SettingsTable> {
+  $$SettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SettingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SettingsTable> {
+  $$SettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+}
+
+class $$SettingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SettingsTable,
+          Setting,
+          $$SettingsTableFilterComposer,
+          $$SettingsTableOrderingComposer,
+          $$SettingsTableAnnotationComposer,
+          $$SettingsTableCreateCompanionBuilder,
+          $$SettingsTableUpdateCompanionBuilder,
+          (Setting, BaseReferences<_$AppDatabase, $SettingsTable, Setting>),
+          Setting,
+          PrefetchHooks Function()
+        > {
+  $$SettingsTableTableManager(_$AppDatabase db, $SettingsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> name = const Value.absent(),
+                Value<String> value = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SettingsCompanion(name: name, value: value, rowid: rowid),
+          createCompanionCallback:
+              ({
+                required String name,
+                required String value,
+                Value<int> rowid = const Value.absent(),
+              }) => SettingsCompanion.insert(
+                name: name,
+                value: value,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SettingsTable, Setting>(table),
+                  BaseReferences<_$AppDatabase, $SettingsTable, Setting>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SettingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SettingsTable,
+      Setting,
+      $$SettingsTableFilterComposer,
+      $$SettingsTableOrderingComposer,
+      $$SettingsTableAnnotationComposer,
+      $$SettingsTableCreateCompanionBuilder,
+      $$SettingsTableUpdateCompanionBuilder,
+      (Setting, BaseReferences<_$AppDatabase, $SettingsTable, Setting>),
+      Setting,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1925,4 +3405,10 @@ class $AppDatabaseManager {
       $$DevicesTableTableManager(_db, _db.devices);
   $$DeviceWidgetsTableTableManager get deviceWidgets =>
       $$DeviceWidgetsTableTableManager(_db, _db.deviceWidgets);
+  $$OscoreSequencesTableTableManager get oscoreSequences =>
+      $$OscoreSequencesTableTableManager(_db, _db.oscoreSequences);
+  $$AccountsTableTableManager get accounts =>
+      $$AccountsTableTableManager(_db, _db.accounts);
+  $$SettingsTableTableManager get settings =>
+      $$SettingsTableTableManager(_db, _db.settings);
 }

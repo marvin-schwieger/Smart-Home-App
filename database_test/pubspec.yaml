@@ -8,14 +8,17 @@ environment:
 
 dependencies:
   coap: ^9.2.1
+  crypto: ^3.0.7
   drift: ^2.34.4
   fl_chart: ^1.2.0
   flex_color_picker: ^3.8.0
   flutter:
     sdk: flutter
+  flutter_js: ^0.8.7
   http: ^1.6.0
   path: ^1.9.1
   path_provider: ^2.1.6
+  pointycastle: ^4.0.0
   reorderable_grid_view: ^2.2.8
   sqlite3_flutter_libs: ^0.6.0+eol
 
@@ -25,5 +28,9 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   build_runner: ^2.15.1
   drift_dev: ^2.34.6
+  # DTLS server for test/dtls_test.dart, the coap package uses it as client
+  dtls2: ^0.18.1
 flutter:
   uses-material-design: true
+  assets:
+    - assets/js.ico

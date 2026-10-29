@@ -61,15 +61,17 @@ class ColorControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = parseColorHex(session.payloadValue(config.field)) ?? Colors.white;
+    final design = context.design;
+    final radius = BorderRadius.circular(design.fieldRadius);
 
     return InkWell(
       onTap: () => _pickColor(context, color),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: radius,
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: fieldColor,
-          borderRadius: BorderRadius.circular(12),
+          color: design.field,
+          borderRadius: radius,
         ),
         child: Row(
           children: [
@@ -79,7 +81,7 @@ class ColorControl extends StatelessWidget {
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.black12),
+                border: Border.all(color: design.outline),
               ),
             ),
             const SizedBox(width: 12),
@@ -93,7 +95,7 @@ class ColorControl extends StatelessWidget {
               'Pick colour',
               style: TextStyle(color: Theme.of(context).colorScheme.primary),
             ),
-            const Icon(Icons.chevron_right, color: Colors.black45),
+            Icon(Icons.chevron_right, color: design.icon),
           ],
         ),
       ),

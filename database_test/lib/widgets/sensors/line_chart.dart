@@ -28,12 +28,12 @@ class SensorChart extends StatelessWidget {
     ];
 
     if (spots.length < 2) {
-      return const SizedBox(
+      return SizedBox(
         height: 120,
         child: Center(
           child: Text(
             'The graph starts after two readings',
-            style: TextStyle(color: subtitleColor),
+            style: TextStyle(color: context.design.muted),
           ),
         ),
       );
@@ -102,13 +102,14 @@ class SensorChart extends StatelessWidget {
           ),
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (_) => Colors.black87,
+              // Dark on a light page and light on a dark one
+              getTooltipColor: (_) => Theme.of(context).colorScheme.inverseSurface,
               getTooltipItems: (spots) => [
                 for (final spot in spots)
                   LineTooltipItem(
                     '${formatNumber(spot.y, decimals: config.decimals, unit: config.unit)}'
                     '\n${clockTime(time(spot.x))}',
-                    const TextStyle(color: Colors.white, fontSize: 12),
+                    TextStyle(color: Theme.of(context).colorScheme.onInverseSurface, fontSize: 12),
                   ),
               ],
             ),

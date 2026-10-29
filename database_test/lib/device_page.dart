@@ -91,7 +91,7 @@ class _DevicePageState extends State<DevicePage> {
                 Text(device.name),
                 Text(
                   '${_capitalized(device.role.label)} · ${widget.room.name}',
-                  style: const TextStyle(fontSize: 12, color: subtitleColor),
+                  style: TextStyle(fontSize: 12, color: context.design.muted),
                 ),
               ],
             ),
@@ -108,7 +108,7 @@ class _DevicePageState extends State<DevicePage> {
               : _widgets.isEmpty
                   ? _EmptyDevice(role: device.role, onAdd: _addWidget)
                   : ReorderableListView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(context.design.padding),
                       // Dragged by the handle in the card header only, the
                       // charts and sliders need their own gestures
                       buildDefaultDragHandles: false,
@@ -135,8 +135,8 @@ class _DevicePageState extends State<DevicePage> {
 
 String _capitalized(String text) => '${text[0].toUpperCase()}${text.substring(1)}';
 
-// White card around one widget: a header with drag handle, name and menu,
-// the widget itself below
+// Card around one widget: a header with drag handle, name and menu, the
+// widget itself below
 class _WidgetCard extends StatelessWidget {
   final int index;
   final DeviceWidget entry;
@@ -157,14 +157,12 @@ class _WidgetCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final type = widgetType(entry.kind);
     final config = WidgetConfig.decode(entry.config);
+    final design = context.design;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
+      padding: EdgeInsets.only(bottom: design.spacing * 0.75),
+      child: DesignCard(
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -172,9 +170,9 @@ class _WidgetCard extends StatelessWidget {
               children: [
                 ReorderableDragStartListener(
                   index: index,
-                  child: const Padding(
-                    padding: EdgeInsets.fromLTRB(10, 10, 6, 10),
-                    child: Icon(Icons.drag_indicator, size: 20, color: Colors.black26),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 10, 6, 10),
+                    child: Icon(Icons.drag_indicator, size: 20, color: design.faint),
                   ),
                 ),
                 Expanded(
@@ -182,11 +180,11 @@ class _WidgetCard extends StatelessWidget {
                     type.title(config),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13, color: subtitleColor),
+                    style: TextStyle(fontSize: 13, color: design.muted),
                   ),
                 ),
                 PopupMenuButton<VoidCallback>(
-                  icon: const Icon(Icons.more_horiz, color: Colors.black45),
+                  icon: Icon(Icons.more_horiz, color: design.icon),
                   tooltip: 'Widget options',
                   onSelected: (action) => action(),
                   itemBuilder: (_) => [
@@ -198,7 +196,7 @@ class _WidgetCard extends StatelessWidget {
               ],
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: EdgeInsets.fromLTRB(design.padding, 0, design.padding, design.padding),
               child: type.build(session, config),
             ),
           ],
@@ -217,16 +215,17 @@ class _EmptyDevice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final design = context.design;
     final examples = widgetTypes
         .where((t) => t.roles.contains(role))
         .map((t) => t.label.toLowerCase())
         .join(', ');
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(design.padding),
       children: [
         const SizedBox(height: 40),
-        Icon(role.icon, size: 40, color: Colors.grey),
+        Icon(role.icon, size: 40, color: design.muted),
         const SizedBox(height: 12),
         const Text(
           'No widgets yet',
@@ -237,7 +236,7 @@ class _EmptyDevice extends StatelessWidget {
         Text(
           'Put together what this ${role.label} shows: $examples.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey.shade700, height: 1.4),
+          style: TextStyle(color: design.muted, height: 1.4),
         ),
         const SizedBox(height: 24),
         _AddWidgetButton(onPressed: onAdd),
@@ -252,18 +251,6 @@ class _AddWidgetButton extends StatelessWidget {
   const _AddWidgetButton({required this.onPressed});
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: const Icon(Icons.add),
-        label: const Text('Add widget'),
-        style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      WideOutlinedButton(icon: Icons.add, label: 'Add widget', onPressed: onPressed);
 }

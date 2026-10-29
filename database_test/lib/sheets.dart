@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 
+import 'auth/auth_page.dart';
+import 'auth/device_auth.dart';
 import 'database.dart';
 import 'device_presets.dart';
 import 'device_session.dart';
@@ -174,6 +176,7 @@ class _DeviceSheetState extends State<_DeviceSheet> {
   late String _scheme;
   late String _method;
   late int _pollSeconds;
+  late DeviceAuth _auth;
 
   @override
   void initState() {
@@ -190,6 +193,7 @@ class _DeviceSheetState extends State<_DeviceSheet> {
     _scheme = device?.scheme ?? 'coap';
     _method = device?.method ?? _role.defaultMethod;
     _pollSeconds = device?.pollSeconds ?? DeviceSession.defaultPollSeconds;
+    _auth = device == null ? DeviceAuth.none : DeviceAuth.decode(device.auth);
   }
 
   @override
@@ -201,8 +205,30 @@ class _DeviceSheetState extends State<_DeviceSheet> {
     super.dispose();
   }
 
-  bool get _isValid =>
+  bool get _hasAddress =>
       _nameCtrl.text.trim().isNotEmpty && _hostCtrl.text.trim().isNotEmpty;
+
+  // What is missing in the authentication, null if it is complete
+  String? get _authError => _auth.validate(_scheme);
+
+  bool get _isValid => _hasAddress && _authError == null;
+
+  // coaps:// can't be used without DTLS, so switching there picks it
+  void _setScheme(String scheme) => setState(() {
+        _scheme = scheme;
+        _auth = _auth.forScheme(scheme);
+      });
+
+  // The settings are edited on a page of their own, see auth/auth_page.dart
+  Future<void> _editAuth() async {
+    final auth = await showAuthPage(
+      context,
+      scheme: _scheme,
+      auth: _auth,
+      deviceName: _nameCtrl.text,
+    );
+    if (auth != null && mounted) setState(() => _auth = auth);
+  }
 
   Future<void> _save() async {
     final values = DevicesCompanion(
@@ -215,6 +241,7 @@ class _DeviceSheetState extends State<_DeviceSheet> {
       method: Value(_method),
       payload: Value(_payloadCtrl.text),
       pollSeconds: Value(_role == DeviceRole.sensor ? _pollSeconds : null),
+      auth: Value(_auth.cleanedFor(_scheme).encode()),
     );
 
     final existing = widget.device;
@@ -258,10 +285,10 @@ class _DeviceSheetState extends State<_DeviceSheet> {
         const SizedBox(height: 16),
         const FieldLabel('Transport'),
         ChoiceRow(
-          options: const ['coap', 'http'],
+          options: schemes,
           selected: _scheme,
           labelBuilder: (option) => '$option://',
-          onSelected: (option) => setState(() => _scheme = option),
+          onSelected: _setScheme,
         ),
         const SizedBox(height: 16),
         Row(
@@ -286,6 +313,9 @@ class _DeviceSheetState extends State<_DeviceSheet> {
             ),
           ],
         ),
+        const SizedBox(height: 16),
+        const FieldLabel('Authentication'),
+        _AuthTile(auth: _auth, error: _authError, onTap: _editAuth),
         const SizedBox(height: 16),
         const FieldLabel('Method'),
         ChoiceRow(
@@ -326,11 +356,13 @@ class _DeviceSheetState extends State<_DeviceSheet> {
         const SizedBox(height: 20),
         SaveButton(
           enabled: _isValid,
-          label: !_isValid
+          label: !_hasAddress
               ? 'Name it and set a host'
-              : isEditing
-                  ? 'Save changes'
-                  : 'Save ${_role.label}',
+              : _authError != null
+                  ? 'Set up the authentication'
+                  : isEditing
+                      ? 'Save changes'
+                      : 'Save ${_role.label}',
           onPressed: _save,
         ),
       ],
@@ -356,20 +388,75 @@ class _IconPicker extends StatelessWidget {
         for (var i = 0; i < roomIcons.length; i++)
           InkWell(
             onTap: () => onSelected(i),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(context.design.fieldRadius),
             child: Container(
               decoration: BoxDecoration(
-                color: i == selected ? Theme.of(context).colorScheme.primary : fieldColor,
-                borderRadius: BorderRadius.circular(12),
+                color: i == selected ? Theme.of(context).colorScheme.primary : context.design.field,
+                borderRadius: BorderRadius.circular(context.design.fieldRadius),
               ),
               child: Icon(
                 roomIcons[i],
-                size: 20,
-                color: i == selected ? Colors.white : Colors.black87,
+                size: context.design.iconSize,
+                color: i == selected
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
       ],
+    );
+  }
+}
+
+// Method and the most important setting of the authentication, opens its
+// page. Turns red while something is missing, e.g. after switching to coaps://
+class _AuthTile extends StatelessWidget {
+  final DeviceAuth auth;
+
+  // What is missing, null if the authentication is complete
+  final String? error;
+  final VoidCallback onTap;
+
+  const _AuthTile({required this.auth, required this.error, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final design = context.design;
+    final radius = BorderRadius.circular(design.fieldRadius);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: radius,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: design.field, borderRadius: radius),
+        child: Row(
+          children: [
+            Icon(authIcon(auth.method), size: design.iconSize, color: design.icon),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    authType(auth.method).label,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    error ?? auth.summary,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: error == null ? design.muted : design.error,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: design.icon),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -384,6 +471,7 @@ class _UriPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final design = context.design;
     final text = host.trim().isEmpty
         ? 'Enter a host to see the full URI'
         : buildUri(scheme, host, path).toString();
@@ -392,12 +480,12 @@ class _UriPreview extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: fieldColor,
-        borderRadius: BorderRadius.circular(12),
+        color: design.field,
+        borderRadius: BorderRadius.circular(design.fieldRadius),
       ),
       child: Row(
         children: [
-          const Icon(Icons.link, size: 16, color: Colors.black54),
+          Icon(Icons.link, size: 16, color: design.icon),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

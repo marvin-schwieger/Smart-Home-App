@@ -48,7 +48,7 @@ class ValueDisplay extends StatelessWidget {
             fontSize: 32,
             fontWeight: FontWeight.bold,
             // Red while the sensor can't be read, the last value stays visible
-            color: session.lastFailed ? errorColor : Colors.black87,
+            color: session.lastFailed ? context.design.error : null,
           ),
         ),
         Text(
@@ -58,8 +58,8 @@ class ValueDisplay extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             color: session.lastFailed || value == null && latest != null
-                ? errorColor
-                : subtitleColor,
+                ? context.design.error
+                : context.design.muted,
           ),
         ),
       ],
@@ -100,7 +100,7 @@ class SensorBadge extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: session.lastFailed ? errorColor : Colors.black87,
+              color: session.lastFailed ? context.design.error : null,
             ),
           ),
         );
